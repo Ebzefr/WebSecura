@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSecura - Making your browsing experience, safer..</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+    </head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Matrix Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
+    <!-- Header -->
+    <header class="relative z-50 flex items-center justify-between p-4">
+        <!-- Logo -->
+        <div class="flex items-center">
+            <div class="relative">
+                <img src="assests/WebLogo.webp" alt="WebSecura Logo" class="w-40 h-40 object-contain">
+            </div>
+        </div>
+        
+        <!-- Spacer to push hamburger to the right -->
+        <div class="flex-1"></div>
+        
+        <!-- Navigation Menu Button -->
+        <button class="hamburger" id="hamburgerBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+     <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Navigation Menu -->
+    <div class="nav-menu" id="navMenu">
+        <button class="close-menu" id="closeMenuBtn">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="mt-16">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home mr-3"></i>Home
+            </a>
+            <a href="about.html" class="nav-item">
+                <i class="fas fa-info-circle mr-3"></i>About
+            </a>
+            <a href="contact.html" class="nav-item">
+                <i class="fas fa-envelope mr-3"></i>Contact
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 -mt-32">
+        <!-- Hero Section -->
+        <div class="text-center max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-6xl font-bold mb-8 leading-tight">
+                Making your browsing experience, 
+                <span class="logo-shield">safer..</span>
+            </h1>
+            
+            <!-- Search Section -->
+            <div class="max-w-2xl mx-auto">
+                <div class="search-container rounded-2xl p-6">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input 
+                            type="url" 
+                            id="websiteUrl"
+                            placeholder="Enter a website link..." 
+                            class="search-input flex-1 px-6 py-4 rounded-xl placeholder-gray-500 focus:outline-none"
+                            required
+                        />
+                        <button 
+                            type="button"
+                            id="searchBtn"
+                            class="search-btn px-8 py-4 rounded-xl font-semibold text-white whitespace-nowrap"
+                        >
+                            Scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>   
+    </main>
+      <script src="script.js"></script>
+</body>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - WebSecura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Matrix Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
+    <!-- Header -->
+    <header class="relative z-50 flex items-center justify-between p-4">
+        <!-- Logo -->
+        <div class="flex items-center">
+            <div class="relative">
+                <a href="index.html">
+                    <img src="assests/WebLogo.webp" alt="WebSecura Logo" class="w-40 h-40 object-contain">
+                </a>
+            </div>
+        </div>
+        
+        <!-- Spacer to push hamburger to the right -->
+        <div class="flex-1"></div>
+        
+        <!-- Navigation Menu Button -->
+        <button class="hamburger" id="hamburgerBtn" onclick="console.log('Direct click works!')">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+    
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Navigation Menu -->
+    <div class="nav-menu" id="navMenu">
+        <button class="close-menu" id="closeMenuBtn">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="mt-16">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home mr-3"></i>Home
+            </a>
+            <a href="about.html" class="nav-item">
+                <i class="fas fa-info-circle mr-3"></i>About
+            </a>
+            <a href="contact.html" class="nav-item">
+                <i class="fas fa-envelope mr-3"></i>Contact
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="relative z-10 flex items-center justify-center min-h-screen px-6">
+        <!-- Contact Section -->
+        <div class="contact-container max-w-4xl mx-auto">
+            <div class="contact-card">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="contact-icon mb-4">
+                        <i class="fas fa-paper-plane text-6xl logo-shield"></i>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                        Contact <span class="logo-shield">WebSecura</span>
+                    </h1>
+                    <p class="text-gray-300 text-lg">
+                        Get in touch with our security experts
+                    </p>
+                    <div class="contact-divider"></div>
+                </div>
+                
+                <!-- Contact Content -->
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- Contact Form -->
+                    <div class="contact-form-section">
+                        <h2 class="text-2xl font-semibold mb-6 text-green-400">
+                            <i class="fas fa-envelope mr-3"></i>Send us a Message
+                        </h2>
+                        
+                        <form class="contact-form" id="contactForm">
+                            <div class="form-group">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-user mr-2"></i>Full Name
+                                </label>
+                                <input type="text" id="name" name="name" class="form-input" placeholder="John Doe" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope mr-2"></i>Email Address
+                                </label>
+                                <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subject" class="form-label">
+                                    <i class="fas fa-tag mr-2"></i>Subject
+                                </label>
+                                <select id="subject" name="subject" class="form-input" required>
+                                    <option value="">Select a topic...</option>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="security">Security Question</option>
+                                    <option value="bug">Bug Report</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="support">Technical Support</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="message" class="form-label">
+                                    <i class="fas fa-comment mr-2"></i>Message
+                                </label>
+                                <textarea id="message" name="message" rows="5" class="form-input" placeholder="Tell us how we can help you..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="submit-button">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                Send Message
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Contact Info -->
+                    <div class="contact-info-section">
+                        <h2 class="text-2xl font-semibold mb-6 text-green-400">
+                            <i class="fas fa-info-circle mr-3"></i>Get in Touch
+                        </h2>
+                        
+                        <div class="contact-methods space-y-6">
+                            <div class="contact-method">
+                                <div class="contact-method-icon">
+                                    <i class="fas fa-envelope text-green-400"></i>
+                                </div>
+                                <div class="contact-method-content">
+                                    <h3 class="font-semibold text-white">Email Us</h3>
+                                    <p class="text-gray-300">hello@websecura.com</p>
+                                    <p class="text-sm text-gray-400">We typically respond within 24 hours</p>
+                                </div>
+                            </div>
+                            
+                            <div class="contact-method">
+                                <div class="contact-method-icon">
+                                    <i class="fas fa-clock text-green-400"></i>
+                                </div>
+                                <div class="contact-method-content">
+                                    <h3 class="font-semibold text-white">Business Hours</h3>
+                                    <p class="text-gray-300">Monday - Friday: 9:00 AM - 6:00 PM</p>
+                                    <p class="text-gray-300">Saturday: 10:00 AM - 4:00 PM</p>
+                                    <p class="text-sm text-gray-400">GMT timezone</p>
+                                </div>
+                            </div>
+                            
+                            <div class="contact-method">
+                                <div class="contact-method-icon">
+                                    <i class="fas fa-shield-alt text-green-400"></i>
+                                </div>
+                                <div class="contact-method-content">
+                                    <h3 class="font-semibold text-white">Security Reports</h3>
+                                    <p class="text-gray-300">security@websecura.com</p>
+                                    <p class="text-sm text-gray-400">For reporting security vulnerabilities</p>
+                                </div>
+                            </div>
+                            
+                            <div class="contact-method">
+                                <div class="contact-method-icon">
+                                    <i class="fas fa-life-ring text-green-400"></i>
+                                </div>
+                                <div class="contact-method-content">
+                                    <h3 class="font-semibold text-white">Support</h3>
+                                    <p class="text-gray-300">support@websecura.com</p>
+                                    <p class="text-sm text-gray-400">Technical support and assistance</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Social Links -->
+                        <div class="social-section mt-8 pt-6 border-t border-gray-600">
+                            <h3 class="text-lg font-semibold mb-4 text-green-400">Follow Us</h3>
+                            <div class="social-links">
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-linkedin"></i>
+                                </a>
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-discord"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Success Message -->
+                <div id="successMessage" class="success-message hidden">
+                    <div class="success-content">
+                        <i class="fas fa-check-circle text-4xl text-green-400 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-white mb-2">Message Sent Successfully!</h3>
+                        <p class="text-gray-300">Thank you for contacting us. We'll get back to you soon.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
