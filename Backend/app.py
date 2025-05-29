@@ -141,9 +141,9 @@ if __name__ == '__main__':
     # Create necessary directories
     os.makedirs('logs', exist_ok=True)
     
-    # Run the app
+    # Run the app on port 8000 instead of 5000
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=8000,
         debug=True
     )

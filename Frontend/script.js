@@ -91,7 +91,8 @@ function createMatrixRain() {
 // Initialize matrix effect
 createMatrixRain();
 
-// Search functionality - Only for home page
+//Search functinality
+// Updated Search functionality - Replace in your script.js
 function initSearchFunctionality() {
     const searchBtn = document.getElementById('searchBtn');
     const websiteUrl = document.getElementById('websiteUrl');
@@ -99,7 +100,7 @@ function initSearchFunctionality() {
     if (searchBtn && websiteUrl) {
         // Search button click
         searchBtn.addEventListener('click', function() {
-            const url = websiteUrl.value;
+            const url = websiteUrl.value.trim();
             if (!url) {
                 alert('Please enter a website URL');
                 return;
@@ -113,8 +114,8 @@ function initSearchFunctionality() {
                 return;
             }
             
-            // Placeholder for search functionality
-            alert('Search functionality will be implemented next!');
+            // Call Flask backend
+            performSecurityScan(url);
         });
         
         // Enter key support
@@ -132,6 +133,236 @@ function initSearchFunctionality() {
         websiteUrl.addEventListener('blur', function() {
             this.parentElement.parentElement.style.transform = 'scale(1)';
         });
+    }
+}
+
+async function performSecurityScan(url) {
+    const searchBtn = document.getElementById('searchBtn');
+    const originalText = searchBtn.innerHTML;
+    
+    try {
+        // Show loading state
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Scanning...';
+        searchBtn.disabled = true;
+        
+        console.log('Starting scan for:', url); // Debug log
+        
+        // Call Flask backend API - USE FULL URL TO FLASK SERVER
+        const response = await fetch('http://localhost:8000/api/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ url: url })
+        });
+        
+        console.log('Response status:', response.status); // Debug log
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error:', errorText); // Debug log
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Received data:', data); // Debug log
+        
+        if (data.status === 'success') {
+            // Display results
+            displayScanResults(data);
+            
+            // Clear the input form after successful scan
+            websiteUrl.value = '';
+        } else {
+            throw new Error(data.error || 'Scan failed');
+        }
+        
+    } catch (error) {
+        console.error('Scan error:', error);
+        alert(`Scan failed: ${error.message}`);
+    } finally {
+        // Reset button
+        searchBtn.innerHTML = originalText;
+        searchBtn.disabled = false;
+    }
+}
+
+function displayScanResults(data) {
+    // Remove the simple alert and create a beautiful results overlay
+    createResultsOverlay(data);
+}
+
+function createResultsOverlay(data) {
+    // Remove existing overlay if present
+    const existingOverlay = document.getElementById('resultsOverlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    const totalChecks = data.results.length;
+    const passedChecks = data.results.filter(r => r.passed).length;
+    const failedChecks = totalChecks - passedChecks;
+    
+    // Determine overall status
+    let overallStatus = 'success';
+    let statusIcon = 'fas fa-shield-check';
+    let statusText = 'Secure';
+    
+    if (failedChecks > 0) {
+        if (failedChecks >= totalChecks * 0.5) {
+            overallStatus = 'danger';
+            statusIcon = 'fas fa-shield-exclamation';
+            statusText = 'High Risk';
+        } else {
+            overallStatus = 'warning';
+            statusIcon = 'fas fa-shield-alt';
+            statusText = 'Needs Attention';
+        }
+    }
+    
+    // Create overlay HTML
+    const overlay = document.createElement('div');
+    overlay.id = 'resultsOverlay';
+    overlay.className = 'results-overlay';
+    
+    overlay.innerHTML = generateResultsHTML(data, totalChecks, passedChecks, failedChecks, overallStatus, statusIcon, statusText);
+    
+    // Add to page
+    document.body.appendChild(overlay);
+    
+    // Show with animation
+    setTimeout(() => {
+        overlay.classList.add('show');
+    }, 100);
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeResults();
+        }
+    });
+    
+    // Close on Escape key
+    const escapeHandler = function(e) {
+        if (e.key === 'Escape') {
+            closeResults();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+function generateResultsHTML(data, totalChecks, passedChecks, failedChecks, overallStatus, statusIcon, statusText) {
+    return `
+        <div class="results-container">
+            <!-- Header -->
+            <div class="results-header">
+                <button class="results-close" onclick="closeResults()">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="scan-status">
+                    <div class="status-icon ${overallStatus}">
+                        <i class="${statusIcon}"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Security Scan Complete</h2>
+                        <p class="text-xl logo-shield">${statusText}</p>
+                    </div>
+                </div>
+                
+                <div class="scan-summary">
+                    <div class="summary-item">
+                        <div class="summary-number total">${totalChecks}</div>
+                        <div class="text-gray-300">Total Checks</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number passed">${passedChecks}</div>
+                        <div class="text-gray-300">Passed</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number failed">${failedChecks}</div>
+                        <div class="text-gray-300">Failed</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="results-body">
+                <div class="scan-info">
+                    <p class="text-gray-300 mb-2">
+                        <i class="fas fa-globe mr-2"></i>
+                        Scanned URL: <a href="${data.url}" target="_blank" class="scan-url">${data.url}</a>
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        <i class="fas fa-clock mr-2"></i>
+                        Scan completed at ${new Date(data.scan_time).toLocaleString()}
+                    </p>
+                </div>
+                
+                <div class="results-grid">
+                    ${data.results.map(result => createResultCard(result)).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createResultCard(result) {
+    const statusClass = result.passed ? 'passed' : 'failed';
+    const statusIcon = result.passed ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    const statusText = result.passed ? 'Passed' : 'Failed';
+    
+    // Determine severity badge (only show for failed checks)
+    let severityBadge = '';
+    if (!result.passed && result.severity && result.severity !== 'none') {
+        severityBadge = `<div class="severity-badge severity-${result.severity}">${result.severity}</div>`;
+    }
+    
+    return `
+        <div class="result-card ${statusClass}">
+            <div class="result-header">
+                <div class="result-title-row">
+                    <div class="result-title">
+                        <div class="result-icon ${statusClass}">
+                            <i class="${statusIcon}"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white">${result.check}</h3>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-status-row">
+                    <div class="result-status ${statusClass}">
+                        <i class="${statusIcon} text-sm"></i>
+                        ${statusText}
+                    </div>
+                    ${severityBadge}
+                </div>
+            </div>
+            
+            <div class="result-description">
+                ${result.description}
+            </div>
+            
+            ${result.details ? `
+                <div class="result-details">
+                    ${result.details}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function closeResults() {
+    const overlay = document.getElementById('resultsOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => {
+            overlay.remove();
+        }, 300);
     }
 }
 
