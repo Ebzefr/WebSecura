@@ -92,7 +92,6 @@ function createMatrixRain() {
 createMatrixRain();
 
 //Search functinality
-// Updated Search functionality - Replace in your script.js
 function initSearchFunctionality() {
     const searchBtn = document.getElementById('searchBtn');
     const websiteUrl = document.getElementById('websiteUrl');
@@ -148,7 +147,7 @@ async function performSecurityScan(url) {
         console.log('Starting scan for:', url); // Debug log
         
         // Call Flask backend API - USE FULL URL TO FLASK SERVER
-        const response = await fetch('http://localhost:8000/api/scan', {
+        const response = await fetch('https://websecura.onrender.com', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
