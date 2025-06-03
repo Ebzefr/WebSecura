@@ -7,7 +7,7 @@ from datetime import datetime
 # Add the scanner module to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scanner'))
 
-from scanner.security_scanner import SecurityScanner
+from .scanner.security_scanner import SecurityScanner
 
 app = Flask(__name__, 
            static_folder='../frontend',  # Point to your frontend directory
