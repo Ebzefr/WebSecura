@@ -147,7 +147,7 @@ async function performSecurityScan(url) {
         console.log('Starting scan for:', url); // Debug log
         
         // Call Flask backend API - USE FULL URL TO FLASK SERVER
-        const response = await fetch('https://websecura.onrender.com', {
+        const response = await fetch('https://websecura.onrender.com/api/scan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
