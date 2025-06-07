@@ -28,6 +28,8 @@ CORS(app, origins=['*'])
 # Initialize the security scanner
 scanner = SecurityScanner()
 
+@app.before_first_request
+
 # Database initialization
 def init_db():
     """Initialize the database with required tables"""
