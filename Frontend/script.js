@@ -1298,6 +1298,7 @@ function showProfileMessage(text, type = 'info') {
 }
 
 // Load user profile data
+// Fixed loadProfile function with proper user_id handling
 async function loadProfile() {
     const userStr = localStorage.getItem('webSecuraUser');
     if (!userStr) {
@@ -1308,6 +1309,7 @@ async function loadProfile() {
     let currentUser;
     try {
         currentUser = JSON.parse(userStr);
+        console.log('Loading profile for user:', currentUser.id); // Debug log
     } catch (error) {
         console.error('Invalid user data:', error);
         localStorage.removeItem('webSecuraUser');
@@ -1315,7 +1317,7 @@ async function loadProfile() {
         return;
     }
 
-    // Fill form with current data
+    // Fill form with current data from localStorage
     if (document.getElementById('username')) {
         document.getElementById('username').value = currentUser.username || '';
     }
@@ -1324,10 +1326,17 @@ async function loadProfile() {
     }
 
     try {
-        const response = await fetch(BACKEND_URL + '/api/profile');
+        // Try to get detailed profile from server with user_id
+        const profileUrl = BACKEND_URL + `/api/profile?user_id=${currentUser.id}`;
+        console.log('Fetching profile from:', profileUrl); // Debug log
+        
+        const response = await fetch(profileUrl);
+        console.log('Profile response status:', response.status); // Debug log
         
         if (response.ok) {
             const data = await response.json();
+            console.log('Profile data received:', data); // Debug log
+            
             if (data.user) {
                 // Update form with server data
                 if (document.getElementById('username')) {
@@ -1348,28 +1357,78 @@ async function loadProfile() {
                 }
                 
                 // Load statistics
+                console.log('Loading statistics:', data.statistics); // Debug log
                 loadStatistics(data.statistics);
             }
         } else {
-            // Fallback to localStorage data
+            console.log('Server profile request failed, using localStorage and fetching stats separately');
+            // Fallback: set member since to unknown and try to get stats from history
             if (document.getElementById('member-since')) {
                 document.getElementById('member-since').textContent = 'Unknown';
             }
-            loadStatistics(null);
+            
+            // Try to calculate statistics from scan history
+            await loadStatisticsFromHistory(currentUser.id);
         }
     } catch (error) {
         console.error('Failed to load profile:', error);
         if (document.getElementById('member-since')) {
             document.getElementById('member-since').textContent = 'Unknown';
         }
+        
+        // Try to calculate statistics from scan history
+        await loadStatisticsFromHistory(currentUser.id);
+    }
+}
+
+// New function to load statistics directly from scan history
+async function loadStatisticsFromHistory(userId) {
+    try {
+        console.log('Fetching statistics from scan history for user:', userId);
+        const historyUrl = BACKEND_URL + `/api/history?user_id=${userId}&per_page=1000`; // Get all scans
+        const response = await fetch(historyUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const scans = data.scans || [];
+            console.log('Found scans for statistics:', scans.length);
+            
+            if (scans.length > 0) {
+                // Calculate statistics from scan data
+                const stats = {
+                    total_scans: scans.length,
+                    total_checks: scans.reduce((sum, scan) => sum + scan.total_checks, 0),
+                    total_passed: scans.reduce((sum, scan) => sum + scan.passed_checks, 0),
+                    total_failed: scans.reduce((sum, scan) => sum + scan.failed_checks, 0),
+                    first_scan: scans[scans.length - 1]?.scan_time, // Assuming scans are ordered DESC
+                    last_scan: scans[0]?.scan_time
+                };
+                
+                console.log('Calculated statistics:', stats);
+                loadStatistics(stats);
+            } else {
+                console.log('No scans found, showing empty statistics');
+                loadStatistics(null);
+            }
+        } else {
+            console.error('Failed to fetch scan history for statistics');
+            loadStatistics(null);
+        }
+    } catch (error) {
+        console.error('Error calculating statistics from history:', error);
         loadStatistics(null);
     }
 }
 
-// Load statistics for profile page
+// Updated loadStatistics function with better debugging
 function loadStatistics(stats) {
     const container = document.getElementById('stats-container');
-    if (!container) return;
+    if (!container) {
+        console.log('Stats container not found');
+        return;
+    }
+    
+    console.log('Loading statistics into container:', stats);
     
     if (!stats || stats.total_scans === 0) {
         container.innerHTML = `
@@ -1390,21 +1449,21 @@ function loadStatistics(stats) {
     
     container.innerHTML = `
         <div class="grid grid-cols-2 gap-4">
-            <div class="stat-card">
-                <div class="stat-number">${stats.total_scans}</div>
-                <div class="stat-label">Total Scans</div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-number">${stats.total_scans}</div>
+                <div class="profile-stat-label">Total Scans</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">${stats.total_checks}</div>
-                <div class="stat-label">Security Checks</div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-number">${stats.total_checks}</div>
+                <div class="profile-stat-label">Security Checks</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number text-green-400">${stats.total_passed}</div>
-                <div class="stat-label">Checks Passed</div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-number text-green-400">${stats.total_passed}</div>
+                <div class="profile-stat-label">Checks Passed</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number text-red-400">${stats.total_failed}</div>
-                <div class="stat-label">Issues Found</div>
+            <div class="profile-stat-card">
+                <div class="profile-stat-number text-red-400">${stats.total_failed}</div>
+                <div class="profile-stat-label">Issues Found</div>
             </div>
         </div>
         
@@ -1419,13 +1478,15 @@ function loadStatistics(stats) {
         </div>
         
         ${stats.first_scan ? `
-        <div class="text-center text-sm text-gray-400">
+        <div class="text-center text-sm text-gray-400 mt-4">
             <i class="fas fa-clock mr-1"></i>
             First scan: ${new Date(stats.first_scan).toLocaleDateString()}
             ${stats.last_scan ? `<br><i class="fas fa-calendar mr-1"></i>Last scan: ${new Date(stats.last_scan).toLocaleDateString()}` : ''}
         </div>
         ` : ''}
     `;
+    
+    console.log('Statistics loaded successfully');
 }
 
 // Handle profile update
@@ -1434,6 +1495,21 @@ async function handleProfileUpdate(event) {
     
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData);
+    
+    // Get user from localStorage
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        showProfileMessage('Please log in to update profile', 'error');
+        return;
+    }
+    
+    let currentUser;
+    try {
+        currentUser = JSON.parse(userStr);
+    } catch (error) {
+        showProfileMessage('Invalid session. Please log in again.', 'error');
+        return;
+    }
     
     // Validation
     if (!data.username?.trim()) {
@@ -1454,6 +1530,7 @@ async function handleProfileUpdate(event) {
         submitBtn.disabled = true;
         
         const updateData = {
+            user_id: currentUser.id, // Add user_id to request
             username: data.username.trim()
         };
         
@@ -1476,12 +1553,8 @@ async function handleProfileUpdate(event) {
             showProfileMessage(result.message || 'Profile updated successfully!', 'success');
             
             // Update localStorage
-            const userStr = localStorage.getItem('webSecuraUser');
-            if (userStr) {
-                const currentUser = JSON.parse(userStr);
-                currentUser.username = data.username.trim();
-                localStorage.setItem('webSecuraUser', JSON.stringify(currentUser));
-            }
+            currentUser.username = data.username.trim();
+            localStorage.setItem('webSecuraUser', JSON.stringify(currentUser));
             
             // Clear password field
             if (document.getElementById('new-password')) {

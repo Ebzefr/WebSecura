@@ -514,16 +514,33 @@ def delete_scan(scan_id):
         return jsonify({'error': f'Failed to delete scan: {str(e)}'}), 500
 
 @app.route('/api/profile', methods=['GET'])
-@login_required
 def get_profile():
     """Get user profile with statistics"""
     try:
+        # Get user_id from query parameter (for CORS workaround)
+        user_id = request.args.get('user_id')
+        
+        # Fallback to session if no user_id parameter
+        if not user_id and 'user_id' in session:
+            user_id = session['user_id']
+        
+        if not user_id:
+            print("❌ No user_id found in profile request")
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user_id = int(user_id)
+        print(f"✅ Loading profile for user_id: {user_id}")
+        
         conn = get_db()
         cursor = conn.cursor()
         
         # Get user info
-        cursor.execute('SELECT username, email, created_at FROM users WHERE id = ?', (session['user_id'],))
+        cursor.execute('SELECT username, email, created_at FROM users WHERE id = ?', (user_id,))
         user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
         
         # Get scan statistics
         cursor.execute('''
@@ -536,10 +553,12 @@ def get_profile():
                 MAX(scan_time) as last_scan
             FROM scan_history 
             WHERE user_id = ?
-        ''', (session['user_id'],))
+        ''', (user_id,))
         
         stats = cursor.fetchone()
         conn.close()
+        
+        print(f"📊 Profile stats for user {user_id}: {dict(stats) if stats['total_scans'] else 'No scans'}")
         
         return jsonify({
             'user': dict(user),
@@ -554,17 +573,37 @@ def get_profile():
         })
         
     except Exception as e:
+        print(f"❌ Profile error: {str(e)}")
         return jsonify({'error': f'Failed to get profile: {str(e)}'}), 500
 
 @app.route('/api/profile', methods=['PUT'])
-@login_required
 def update_profile():
     """Update user profile"""
     try:
         data = request.get_json()
         
+        # Get user_id from request body (same pattern as scan endpoint)
+        user_id = data.get('user_id')
+        
+        # Fallback to session if no user_id in request body
+        if not user_id and 'user_id' in session:
+            user_id = session['user_id']
+        
+        if not user_id:
+            print("❌ No user_id found in profile update request")
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user_id = int(user_id)
+        print(f"✅ Updating profile for user_id: {user_id}")
+        
         conn = get_db()
         cursor = conn.cursor()
+        
+        # Verify user exists
+        cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'User not found'}), 404
         
         # Update username if provided
         if 'username' in data:
@@ -572,14 +611,14 @@ def update_profile():
             if username:
                 # Check if username is already taken
                 cursor.execute('SELECT id FROM users WHERE username = ? AND id != ?', 
-                             (username, session['user_id']))
+                             (username, user_id))
                 if cursor.fetchone():
                     conn.close()
                     return jsonify({'error': 'Username already taken'}), 400
                 
                 cursor.execute('UPDATE users SET username = ? WHERE id = ?', 
-                             (username, session['user_id']))
-                session['username'] = username
+                             (username, user_id))
+                print(f"✅ Username updated for user {user_id}")
         
         # Update password if provided
         if 'password' in data:
@@ -590,7 +629,8 @@ def update_profile():
             
             password_hash = generate_password_hash(password)
             cursor.execute('UPDATE users SET password_hash = ? WHERE id = ?', 
-                         (password_hash, session['user_id']))
+                         (password_hash, user_id))
+            print(f"✅ Password updated for user {user_id}")
         
         conn.commit()
         conn.close()
@@ -598,6 +638,7 @@ def update_profile():
         return jsonify({'message': 'Profile updated successfully'})
         
     except Exception as e:
+        print(f"❌ Profile update error: {str(e)}")
         return jsonify({'error': f'Failed to update profile: {str(e)}'}), 500
 
 # Health and utility endpoints
