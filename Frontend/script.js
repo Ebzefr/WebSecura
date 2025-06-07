@@ -1621,43 +1621,50 @@ function displayScans(scansToShow = null) {
         
         return `
             <div class="scan-history-card" onclick="viewScanDetails(${scan.id})">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
+                <div class="scan-card-header">
+                    <!-- URL Section -->
+                    <div class="scan-url-section">
                         <div class="flex items-center gap-3 mb-2">
-                            <i class="fas ${statusIcon} ${statusColor}"></i>
-                            <h3 class="text-lg font-semibold truncate">${scan.url}</h3>
+                            <i class="fas ${statusIcon} ${statusColor} text-lg"></i>
+                            <h3 class="scan-url-title">${scan.url}</h3>
                         </div>
-                        <div class="flex items-center gap-6 text-sm text-gray-400">
-                            <span>
+                        <div class="scan-meta">
+                            <span class="scan-date">
                                 <i class="fas fa-calendar mr-1"></i>
                                 ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
                             </span>
-                            <span>
+                            <span class="scan-results">
                                 <i class="fas fa-check-circle mr-1 text-green-400"></i>
-                                ${scan.passed_checks}/${scan.total_checks} passed
+                                ${scan.passed_checks}/${scan.total_checks}
                             </span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-center">
-                            <div class="text-xl font-bold ${statusColor}">${successRate}%</div>
-                            <div class="text-xs text-gray-400">Security</div>
+                    
+                    <!-- Actions Section -->
+                    <div class="scan-actions-section">
+                        <div class="security-score">
+                            <div class="score-number ${statusColor}">${successRate}%</div>
+                            <div class="score-label">Security</div>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="action-buttons">
                             <button 
                                 onclick="event.stopPropagation(); viewScanDetails(${scan.id})" 
-                                class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                                class="action-btn view-btn"
+                                title="View Details"
                             >
-                                <i class="fas fa-eye mr-1"></i>View
+                                <i class="fas fa-eye"></i>
+                                <span class="btn-text">View</span>
                             </button>
                             <button 
-                                onclick="event.stopPropagation(); deleteScan(${scan.id})" 
-                                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                                onclick="event.stopPropagation(); confirmDeleteScan(${scan.id})" 
+                                class="action-btn delete-btn"
+                                title="Delete Scan"
                             >
-                                <i class="fas fa-trash mr-1"></i>Delete
+                                <i class="fas fa-trash"></i>
+                                <span class="btn-text">Delete</span>
                             </button>
                         </div>
-                        <i class="fas fa-chevron-right text-gray-400"></i>
+                        <i class="fas fa-chevron-right chevron-icon"></i>
                     </div>
                 </div>
             </div>
@@ -1666,6 +1673,7 @@ function displayScans(scansToShow = null) {
 
     displayPagination(scans.length);
 }
+
 
 // Display empty state
 function displayEmptyState() {
@@ -1803,21 +1811,35 @@ function displayScanModal(scanData) {
         Math.round((scanData.summary.passed_checks / scanData.summary.total_checks) * 100) : 0;
     
     content.innerHTML = `
-        <div class="mb-6">
-            <h3 class="text-xl font-bold mb-2">${scanData.url}</h3>
-            <div class="flex items-center gap-4 text-sm text-gray-400">
-                <span>
+        <div class="modal-header">
+            <h3 class="modal-title">${scanData.url}</h3>
+            <div class="modal-meta">
+                <span class="modal-date">
                     <i class="fas fa-calendar mr-1"></i>
                     ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
                 </span>
-                <span>
+                <span class="modal-score">
                     <i class="fas fa-shield-alt mr-1"></i>
                     Security Score: ${successRate}%
                 </span>
             </div>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <!-- Download Buttons -->
+        <div class="download-buttons">
+            <button onclick="downloadScanPDF('${scanData.url}', ${JSON.stringify(scanData).replace(/"/g, '&quot;')})" 
+                    class="download-btn pdf-btn">
+                <i class="fas fa-file-pdf mr-2"></i>
+                Download PDF
+            </button>
+            <button onclick="downloadScanJSON(${JSON.stringify(scanData).replace(/"/g, '&quot;')})" 
+                    class="download-btn json-btn">
+                <i class="fas fa-file-code mr-2"></i>
+                Download JSON
+            </button>
+        </div>
+
+        <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-number">${scanData.summary.total_checks}</div>
                 <div class="stat-label">Total Checks</div>
@@ -1832,47 +1854,96 @@ function displayScanModal(scanData) {
             </div>
         </div>
 
-        <div class="space-y-4">
-            <h4 class="text-lg font-semibold mb-4">Detailed Results</h4>
-            ${scanData.results.map(result => `
-                <div class="result-card ${result.passed ? 'border-green-500' : 'border-red-500'}">
-                    <div class="flex items-start gap-3">
-                        <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} mt-1"></i>
-                        <div class="flex-1">
-                            <h5 class="font-semibold mb-1">${result.check}</h5>
-                            <p class="text-gray-300 text-sm mb-2">${result.description}</p>
-                            ${result.details ? `<p class="text-xs text-gray-400">${result.details}</p>` : ''}
-                            ${!result.passed && result.recommendation ? `
-                                <div class="mt-2 p-2 bg-blue-900 bg-opacity-50 rounded border-l-2 border-blue-400">
-                                    <p class="text-sm"><strong>Recommendation:</strong> ${result.recommendation}</p>
-                                </div>
-                            ` : ''}
+        <div class="results-section">
+            <h4 class="results-title">Detailed Results</h4>
+            <div class="results-list">
+                ${scanData.results.map(result => `
+                    <div class="result-item ${result.passed ? 'result-passed' : 'result-failed'}">
+                        <div class="result-content">
+                            <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} result-icon"></i>
+                            <div class="result-details">
+                                <h5 class="result-title">${result.check}</h5>
+                                <p class="result-description">${result.description}</p>
+                                ${result.details ? `<p class="result-extra">${result.details}</p>` : ''}
+                                ${!result.passed && result.recommendation ? `
+                                    <div class="result-recommendation">
+                                        <p><strong>Recommendation:</strong> ${result.recommendation}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('')}
+                `).join('')}
+            </div>
         </div>
     `;
     
     modal.classList.remove('hidden');
 }
 
-// Close scan modal
-function closeScanModal() {
-    const modal = document.getElementById('scan-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+// Download functions (add these if not already present)
+function downloadScanPDF(url, scanData) {
+    // Create PDF content
+    const content = `
+        WebSecura Security Scan Report
+        
+        URL: ${url}
+        Date: ${new Date(scanData.scan_time).toLocaleString()}
+        Security Score: ${Math.round((scanData.summary.passed_checks / scanData.summary.total_checks) * 100)}%
+        
+        Summary:
+        - Total Checks: ${scanData.summary.total_checks}
+        - Passed: ${scanData.summary.passed_checks}
+        - Failed: ${scanData.summary.failed_checks}
+        
+        Detailed Results:
+        ${scanData.results.map(r => `
+        ${r.passed ? '✓' : '✗'} ${r.check}
+        ${r.description}
+        ${r.details || ''}
+        ${r.recommendation ? 'Recommendation: ' + r.recommendation : ''}
+        `).join('\n')}
+    `;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url_blob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url_blob;
+    a.download = `websecura-scan-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url_blob);
 }
+
+function downloadScanJSON(scanData) {
+    const blob = new Blob([JSON.stringify(scanData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `websecura-scan-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
 
 // Delete scan
 async function deleteScan(scanId) {
-    if (!confirm('Are you sure you want to delete this scan? This action cannot be undone.')) {
+    // Get user from localStorage
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    let currentUser;
+    try {
+        currentUser = JSON.parse(userStr);
+    } catch (error) {
+        window.location.href = 'auth.html';
         return;
     }
 
     try {
-        const response = await fetch(BACKEND_URL + `/api/history/${scanId}`, {
+        const response = await fetch(BACKEND_URL + `/api/history/${scanId}?user_id=${currentUser.id}`, {
             method: 'DELETE'
         });
         
@@ -1886,6 +1957,62 @@ async function deleteScan(scanId) {
         console.error('Failed to delete scan:', error);
         showHistoryMessage('Failed to delete scan', 'error');
     }
+}
+
+// Close scan modal function
+function closeScanModal() {
+    const modal = document.getElementById('scan-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+function confirmDeleteScan(scanId) {
+    // Create custom confirmation modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-white mb-2">Delete Scan</h3>
+                <p class="text-gray-300 mb-6">Are you sure you want to delete this scan? This action cannot be undone.</p>
+                <div class="flex gap-3 justify-center">
+                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="executeDelete(${scanId})" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.id = 'delete-modal';
+    document.body.appendChild(modal);
+    
+    // Close on outside click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDeleteModal();
+        }
+    });
+}
+
+// Close delete modal
+function closeDeleteModal() {
+    const modal = document.getElementById('delete-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Execute delete
+function executeDelete(scanId) {
+    closeDeleteModal();
+    deleteScan(scanId);
 }
 
 // ==================== PAGE INITIALIZATION ====================
