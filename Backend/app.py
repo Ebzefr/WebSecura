@@ -19,7 +19,7 @@ app = Flask(__name__,
            template_folder='../frontend')
 
 # Configuration
-app.config['SECRET_KEY'] = secrets.token_hex(32)  # Generate a random secret key
+app.config['SECRET_KEY'] = secrets.token_hex(32)
 app.config['DATABASE'] = 'websecura.db'
 
 # Enable CORS with credentials support
@@ -28,11 +28,10 @@ CORS(app, origins=['*'])
 # Initialize the security scanner
 scanner = SecurityScanner()
 
-@app.before_first_request
-
-# Database initialization
+# Database initialization function (move this OUTSIDE the decorator)
 def init_db():
     """Initialize the database with required tables"""
+    print("Creating database tables...")
     conn = sqlite3.connect(app.config['DATABASE'])
     cursor = conn.cursor()
     
@@ -78,11 +77,18 @@ def init_db():
     
     conn.commit()
     conn.close()
+    print("Database tables created successfully!")
+
+# CALL IT IMMEDIATELY - This ensures tables are created when the app starts
+try:
+    init_db()
+except Exception as e:
+    print(f"Database initialization error: {e}")
 
 def get_db():
     """Get database connection"""
     conn = sqlite3.connect(app.config['DATABASE'])
-    conn.row_factory = sqlite3.Row  # Enable column access by name
+    conn.row_factory = sqlite3.Row
     return conn
 
 def login_required(f):
