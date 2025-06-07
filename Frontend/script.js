@@ -873,3 +873,181 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+//-----------------Authentication functionality ------------------//
+const BACKEND_URL = window.location.hostname.includes('localhost')
+  ? 'http://127.0.0.1:8000'
+  : 'https://websecura.onrender.com';
+let isLoginMode = true;
+
+// Basic utility functions
+function showMessage(text, type = 'info') {
+    const messageEl = document.getElementById('auth-message');
+    const textEl = document.getElementById('message-text');
+    
+    if (messageEl && textEl) {
+        textEl.textContent = text;
+        messageEl.className = `auth-message show ${type}`;
+        messageEl.style.display = 'block';
+    }
+}
+
+function hideMessage() {
+    const messageEl = document.getElementById('auth-message');
+    if (messageEl) {
+        messageEl.className = 'auth-message hidden';
+        messageEl.style.display = 'none';
+    }
+}
+
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    const eyeIcon = document.getElementById(fieldId + '-eye');
+    
+    if (passwordField && eyeIcon) {
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            eyeIcon.className = 'fas fa-eye-slash';
+        } else {
+            passwordField.type = 'password';
+            eyeIcon.className = 'fas fa-eye';
+        }
+    }
+}
+
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    
+    const usernameGroup = document.getElementById('username-group');
+    const confirmPasswordGroup = document.getElementById('confirm-password-group');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+    const submitIcon = document.getElementById('submit-icon');
+    const submitText = document.getElementById('submit-text');
+    const toggleQuestion = document.getElementById('toggle-question');
+    const toggleText = document.getElementById('toggle-text');
+    
+    if (isLoginMode) {
+        // Login Mode
+        usernameGroup.style.display = 'none';
+        confirmPasswordGroup.style.display = 'none';
+        authTitle.textContent = 'Welcome Back';
+        authSubtitle.textContent = 'Sign in to access your security dashboard';
+        submitIcon.className = 'fas fa-sign-in-alt mr-2';
+        submitText.textContent = 'Sign In';
+        toggleQuestion.textContent = "Don't have an account?";
+        toggleText.textContent = 'Create Account';
+        
+        document.getElementById('username').required = false;
+        document.getElementById('confirm-password').required = false;
+    } else {
+        // Register Mode
+        usernameGroup.style.display = 'block';
+        confirmPasswordGroup.style.display = 'block';
+        authTitle.textContent = 'Create Account';
+        authSubtitle.textContent = 'Join WebSecura to track your security scans';
+        submitIcon.className = 'fas fa-user-plus mr-2';
+        submitText.textContent = 'Create Account';
+        toggleQuestion.textContent = 'Already have an account?';
+        toggleText.textContent = 'Sign In';
+        
+        document.getElementById('username').required = true;
+        document.getElementById('confirm-password').required = true;
+    }
+    
+    document.getElementById('authForm').reset();
+    hideMessage();
+}
+
+async function handleAuthSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData);
+    
+    // Simple validation
+    if (!isLoginMode) {
+        if (!data.username?.trim()) {
+            showMessage('Username is required', 'error');
+            return;
+        }
+        if (data.password !== data['confirm-password']) {
+            showMessage('Passwords do not match', 'error');
+            return;
+        }
+        if (data.password.length < 6) {
+            showMessage('Password must be at least 6 characters long', 'error');
+            return;
+        }
+    }
+    
+    if (!data.email?.trim() || !data.password) {
+        showMessage('Email and password are required', 'error');
+        return;
+    }
+
+    const submitBtn = document.getElementById('auth-submit');
+    const originalHTML = submitBtn.innerHTML;
+    
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        submitBtn.disabled = true;
+        hideMessage();
+        
+        const endpoint = isLoginMode ? '/api/login' : '/api/register';
+        const requestBody = isLoginMode ? {
+            email: data.email.trim(),
+            password: data.password
+        } : {
+            username: data.username.trim(),
+            email: data.email.trim(),
+            password: data.password
+        };
+        
+        const response = await fetch(BACKEND_URL + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage(result.message || 'Success!', 'success');
+            
+            if (result.user) {
+                localStorage.setItem('webSecuraUser', JSON.stringify(result.user));
+            }
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        } else {
+            showMessage(result.error || 'Authentication failed', 'error');
+        }
+        
+    } catch (error) {
+        if (error.message.includes('Failed to fetch')) {
+            showMessage('Cannot connect to server. Make sure backend is running on port 8000.', 'error');
+        } else {
+            showMessage('Error: ' + error.message, 'error');
+        }
+    } finally {
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.disabled = false;
+    }
+}
+
+// Initialize auth functionality when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Only run on auth page
+    const authForm = document.getElementById('authForm');
+    if (authForm) {
+        authForm.addEventListener('submit', handleAuthSubmit);
+        console.log('WebSecura auth initialized');
+    }
+});
+
+// Make functions available globally for onclick handlers
+window.togglePassword = togglePassword;
+window.toggleAuthMode = toggleAuthMode;
