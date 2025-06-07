@@ -93,14 +93,27 @@ createMatrixRain();
 
 //Search functinality
 function initSearchFunctionality() {
+    console.log('🔧 initSearchFunctionality() called');
+    
     const searchBtn = document.getElementById('searchBtn');
     const websiteUrl = document.getElementById('websiteUrl');
     
     if (searchBtn && websiteUrl) {
         
+        // Remove any existing event listeners by cloning elements
+        const newSearchBtn = searchBtn.cloneNode(true);
+        const newWebsiteUrl = websiteUrl.cloneNode(true);
+        
+        searchBtn.parentNode.replaceChild(newSearchBtn, searchBtn);
+        websiteUrl.parentNode.replaceChild(newWebsiteUrl, websiteUrl);
+        
+        // Update references to the new elements
+        const cleanSearchBtn = document.getElementById('searchBtn');
+        const cleanWebsiteUrl = document.getElementById('websiteUrl');
+        
         // Create a single function to handle the scan
         function handleScan() {
-            const url = websiteUrl.value.trim();
+            const url = cleanWebsiteUrl.value.trim();
             if (!url) {
                 alert('Please enter a website URL');
                 return;
@@ -118,29 +131,26 @@ function initSearchFunctionality() {
             performSecurityScan(url);
         }
         
-        // Search button click
-        searchBtn.addEventListener('click', handleScan);
+        // Add fresh event listeners
+        cleanSearchBtn.addEventListener('click', handleScan);
         
-        // Enter key support - call handleScan directly instead of clicking button
-        websiteUrl.addEventListener('keypress', function(e) {
+        cleanWebsiteUrl.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent any default form submission
-                handleScan(); // Call the function directly
+                e.preventDefault();
+                handleScan();
             }
         });
         
-        // Add visual feedback for the input
-        websiteUrl.addEventListener('focus', function() {
+        // Add visual feedback
+        cleanWebsiteUrl.addEventListener('focus', function() {
             this.parentElement.parentElement.style.transform = 'scale(1.02)';
         });
         
-        websiteUrl.addEventListener('blur', function() {
+        cleanWebsiteUrl.addEventListener('blur', function() {
             this.parentElement.parentElement.style.transform = 'scale(1)';
         });
     }
 }
-
-// Also add this to prevent any form submissions if your input is in a form
 function preventFormSubmission() {
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
