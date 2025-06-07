@@ -272,6 +272,7 @@ def scan_website():
             }), 400
         
         url = data['url'].strip()
+        user_id = data.get('user_id') 
         
         # Validate URL format
         if not url.startswith(('http://', 'https://')):
@@ -311,7 +312,7 @@ def scan_website():
                     (user_id, url, total_checks, passed_checks, failed_checks, scan_data)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (
-                    session['user_id'],
+                    user_id,
                     url,
                     total_checks,
                     passed_checks,
