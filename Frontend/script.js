@@ -875,10 +875,136 @@ style.textContent = `
 document.head.appendChild(style);
 
 //-----------------Authentication functionality ------------------//
+// Enhanced authentication with navigation updates
 const BACKEND_URL = window.location.hostname.includes('localhost')
   ? 'http://127.0.0.1:8000'
   : 'https://websecura.onrender.com';
+
 let isLoginMode = true;
+
+// Check authentication status on page load
+async function checkAuthStatus() {
+    try {
+        const response = await fetch(BACKEND_URL + '/api/auth/check', {
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated) {
+                updateNavigationForLoggedInUser(data.user);
+                return data.user;
+            }
+        }
+        updateNavigationForGuest();
+        return null;
+    } catch (error) {
+        console.log('Auth check failed:', error);
+        updateNavigationForGuest();
+        return null;
+    }
+}
+
+// Update navigation menu for logged-in users
+function updateNavigationForLoggedInUser(user) {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        // Find the navigation items container
+        const navContainer = navMenu.querySelector('.mt-16') || navMenu.querySelector('div');
+        
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home mr-3"></i>Home
+                </a>
+                <a href="about.html" class="nav-item">
+                    <i class="fas fa-info-circle mr-3"></i>About
+                </a>
+                <a href="contact.html" class="nav-item">
+                    <i class="fas fa-envelope mr-3"></i>Contact
+                </a>
+                <a href="history.html" class="nav-item">
+                    <i class="fas fa-history mr-3"></i>Scan History
+                </a>
+                <a href="profile.html" class="nav-item">
+                    <i class="fas fa-user mr-3"></i>Profile
+                </a>
+                <a href="#" class="nav-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                </a>
+                <div class="nav-user-info">
+                    <i class="fas fa-user-circle mr-2"></i>
+                    <span>Welcome, ${user.username}</span>
+                </div>
+            `;
+        }
+    }
+    
+    // Update any user display elements
+    const userDisplays = document.querySelectorAll('.user-display');
+    userDisplays.forEach(el => {
+        el.textContent = user.username;
+        el.style.display = 'block';
+    });
+}
+
+// Update navigation menu for guests
+function updateNavigationForGuest() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        const navContainer = navMenu.querySelector('.mt-16') || navMenu.querySelector('div');
+        
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home mr-3"></i>Home
+                </a>
+                <a href="about.html" class="nav-item">
+                    <i class="fas fa-info-circle mr-3"></i>About
+                </a>
+                <a href="contact.html" class="nav-item">
+                    <i class="fas fa-envelope mr-3"></i>Contact
+                </a>
+                <a href="auth.html" class="nav-item">
+                    <i class="fas fa-sign-in-alt mr-3"></i>Login
+                </a>
+            `;
+        }
+    }
+    
+    // Hide user display elements
+    const userDisplays = document.querySelectorAll('.user-display');
+    userDisplays.forEach(el => {
+        el.style.display = 'none';
+    });
+}
+
+// Logout function
+async function logout() {
+    try {
+        const response = await fetch(BACKEND_URL + '/api/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            // Clear local storage
+            localStorage.removeItem('webSecuraUser');
+            
+            // Update navigation
+            updateNavigationForGuest();
+            
+            // Redirect to home
+            window.location.href = 'index.html';
+        }
+    } catch (error) {
+        console.error('Logout failed:', error);
+        // Force logout locally even if server request fails
+        localStorage.removeItem('webSecuraUser');
+        updateNavigationForGuest();
+        window.location.href = 'index.html';
+    }
+}
 
 // Basic utility functions
 function showMessage(text, type = 'info') {
@@ -1006,9 +1132,20 @@ async function handleAuthSubmit(event) {
         
         const response = await fetch(BACKEND_URL + endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'include',
             body: JSON.stringify(requestBody)
         });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const htmlText = await response.text();
+            console.error('Received HTML instead of JSON:', htmlText.substring(0, 200));
+            throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+        }
         
         const result = await response.json();
         
@@ -1016,7 +1153,11 @@ async function handleAuthSubmit(event) {
             showMessage(result.message || 'Success!', 'success');
             
             if (result.user) {
+                // Store user data in localStorage
                 localStorage.setItem('webSecuraUser', JSON.stringify(result.user));
+                
+                // Update navigation immediately
+                updateNavigationForLoggedInUser(result.user);
             }
             
             setTimeout(() => {
@@ -1027,8 +1168,11 @@ async function handleAuthSubmit(event) {
         }
         
     } catch (error) {
+        console.error('Full error:', error);
         if (error.message.includes('Failed to fetch')) {
-            showMessage('Cannot connect to server. Make sure backend is running on port 8000.', 'error');
+            showMessage('Cannot connect to server. Please check your internet connection.', 'error');
+        } else if (error.message.includes('HTML instead of JSON')) {
+            showMessage('Server configuration error. Please try again later.', 'error');
         } else {
             showMessage('Error: ' + error.message, 'error');
         }
@@ -1038,9 +1182,12 @@ async function handleAuthSubmit(event) {
     }
 }
 
-// Initialize auth functionality when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Only run on auth page
+// Initialize functionality when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check authentication status on every page
+    await checkAuthStatus();
+    
+    // Only run auth form logic on auth page
     const authForm = document.getElementById('authForm');
     if (authForm) {
         authForm.addEventListener('submit', handleAuthSubmit);
@@ -1048,6 +1195,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Make functions available globally for onclick handlers
+// Make functions available globally
 window.togglePassword = togglePassword;
 window.toggleAuthMode = toggleAuthMode;
+window.logout = logout;
+window.checkAuthStatus = checkAuthStatus;
