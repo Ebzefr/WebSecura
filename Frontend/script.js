@@ -137,6 +137,7 @@ function initSearchFunctionality() {
 
 async function performSecurityScan(url) {
     const searchBtn = document.getElementById('searchBtn');
+    const websiteUrl = document.getElementById('websiteUrl');
     const originalText = searchBtn.innerHTML;
     
     try {
@@ -146,14 +147,35 @@ async function performSecurityScan(url) {
         
         console.log('Starting scan for:', url); // Debug log
         
-        // Call Flask backend API - USE FULL URL TO FLASK SERVER
+        // Get user info from localStorage
+        const userStr = localStorage.getItem('webSecuraUser');
+        let userId = null;
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                userId = user.id;
+                console.log('Found user ID:', userId); // Debug log
+            } catch (error) {
+                console.log('No valid user found in localStorage');
+            }
+        } else {
+            console.log('No user found in localStorage');
+        }
+        
+        // Prepare request body
+        const requestBody = { url: url };
+        if (userId) {
+            requestBody.user_id = userId; // Add user_id to request
+            console.log('Sending request with user_id:', userId); // Debug log
+        }
+        
         const response = await fetch('https://websecura.onrender.com/api/scan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ url: url })
+            body: JSON.stringify(requestBody)
         });
         
         console.log('Response status:', response.status); // Debug log
@@ -172,7 +194,16 @@ async function performSecurityScan(url) {
             displayScanResults(data);
             
             // Clear the input form after successful scan
-            websiteUrl.value = '';
+            if (websiteUrl) {
+                websiteUrl.value = '';
+            }
+            
+            // Show success message if user is logged in
+            if (userId) {
+                console.log('Scan saved to history for user:', userId);
+                // Optional: Show a brief notification
+                showTempMessage('Scan completed and saved to your history!', 'success');
+            }
         } else {
             throw new Error(data.error || 'Scan failed');
         }
@@ -185,6 +216,26 @@ async function performSecurityScan(url) {
         searchBtn.innerHTML = originalText;
         searchBtn.disabled = false;
     }
+}
+
+// Optional: Helper function to show temporary messages
+function showTempMessage(message, type = 'info') {
+    // Create a temporary message element
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    }`;
+    messageDiv.textContent = message;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.parentNode.removeChild(messageDiv);
+        }
+    }, 3000);
 }
 
 let currentScanData = null;
