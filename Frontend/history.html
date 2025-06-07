@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History - WebSecura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Matrix Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
+    <!-- Header -->
+    <header class="relative z-50 flex items-center justify-between" style="padding: 0.5rem 1.5rem;">
+        <!-- Logo -->
+        <div class="flex items-center logo-container">
+            <div class="relative">
+                <a href="index.html">
+                    <img src="assests/WebLogo.webp" alt="WebSecura Logo" class="w-40 h-40 object-contain">
+                </a>
+            </div>
+        </div>
+        
+        <!-- Spacer -->
+        <div class="flex-1"></div>
+        
+        <!-- Navigation Menu Button -->
+        <button class="hamburger" id="hamburgerBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+    
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Navigation Menu -->
+    <div class="nav-menu" id="navMenu">
+        <button class="close-menu" id="closeMenuBtn">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="mt-16">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home mr-3"></i>Home
+            </a>
+            <a href="about.html" class="nav-item">
+                <i class="fas fa-info-circle mr-3"></i>About
+            </a>
+            <a href="contact.html" class="nav-item">
+                <i class="fas fa-envelope mr-3"></i>Contact
+            </a>
+            <a href="auth.html" class="nav-item">
+                <i class="fas fa-sign-in-alt mr-3"></i>Login
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="relative z-10 flex items-center justify-center min-h-screen px-6">
+        <!-- History Section -->
+        <div class="contact-container max-w-6xl mx-auto">
+            <div class="contact-card">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="contact-icon mb-4">
+                        <i class="fas fa-history text-6xl logo-shield"></i>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                        Scan <span class="logo-shield">History</span>
+                    </h1>
+                    <p class="text-gray-300 text-lg">
+                        Review your previous security scans and their results
+                    </p>
+                    <div class="contact-divider"></div>
+                </div>
+
+                <!-- Messages -->
+                <div id="history-message" class="auth-message hidden mb-6">
+                    <div class="message-content">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span id="history-message-text"></span>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+                    <div class="flex items-center gap-4">
+                        <button onclick="loadHistory()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Refresh
+                        </button>
+                        <a href="index.html" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            New Scan
+                        </a>
+                    </div>
+                    
+                    <!-- Search/Filter -->
+                    <div class="flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Search by URL..." 
+                            class="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
+                            onkeyup="filterScans()"
+                        />
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- History List -->
+                <div id="history-container" class="space-y-4 mb-8">
+                    <!-- Loading state -->
+                    <div class="text-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl logo-shield mb-4"></i>
+                        <p class="text-gray-300 text-lg">Loading scan history...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination-container" class="flex justify-center">
+                    <!-- Pagination buttons will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scan Details Modal -->
+    <div id="scan-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-90vh overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                <h2 class="text-2xl font-bold">Scan Details</h2>
+                <button onclick="closeScanModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="scan-modal-content" class="p-6 overflow-y-auto max-h-70vh">
+                <!-- Scan details will be loaded here -->
+            </div>
+        </div>
+    </div>
+        <script src="script.js"></script>
+</body>
+</html>

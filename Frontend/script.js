@@ -1193,3 +1193,593 @@ window.togglePassword = togglePassword;
 window.toggleAuthMode = toggleAuthMode;
 window.logout = logout;
 window.checkAuthStatus = checkAuthStatus;
+
+
+// ==================== PROFILE PAGE FUNCTIONS ====================
+
+// Show profile messages
+function showProfileMessage(text, type = 'info') {
+    const messageEl = document.getElementById('profile-message');
+    const textEl = document.getElementById('profile-message-text');
+    
+    if (messageEl && textEl) {
+        textEl.textContent = text;
+        messageEl.className = `auth-message show ${type}`;
+        messageEl.style.display = 'block';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.className = 'auth-message hidden';
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+    }
+}
+
+// Load user profile data
+async function loadProfile() {
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    let currentUser;
+    try {
+        currentUser = JSON.parse(userStr);
+    } catch (error) {
+        console.error('Invalid user data:', error);
+        localStorage.removeItem('webSecuraUser');
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    // Fill form with current data
+    if (document.getElementById('username')) {
+        document.getElementById('username').value = currentUser.username || '';
+    }
+    if (document.getElementById('email')) {
+        document.getElementById('email').value = currentUser.email || '';
+    }
+
+    try {
+        const response = await fetch(BACKEND_URL + '/api/profile');
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.user) {
+                // Update form with server data
+                if (document.getElementById('username')) {
+                    document.getElementById('username').value = data.user.username || '';
+                }
+                if (document.getElementById('email')) {
+                    document.getElementById('email').value = data.user.email || '';
+                }
+                
+                // Format member since date
+                if (data.user.created_at && document.getElementById('member-since')) {
+                    const date = new Date(data.user.created_at);
+                    document.getElementById('member-since').textContent = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+                
+                // Load statistics
+                loadStatistics(data.statistics);
+            }
+        } else {
+            // Fallback to localStorage data
+            if (document.getElementById('member-since')) {
+                document.getElementById('member-since').textContent = 'Unknown';
+            }
+            loadStatistics(null);
+        }
+    } catch (error) {
+        console.error('Failed to load profile:', error);
+        if (document.getElementById('member-since')) {
+            document.getElementById('member-since').textContent = 'Unknown';
+        }
+        loadStatistics(null);
+    }
+}
+
+// Load statistics for profile page
+function loadStatistics(stats) {
+    const container = document.getElementById('stats-container');
+    if (!container) return;
+    
+    if (!stats || stats.total_scans === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-chart-line text-4xl text-gray-500 mb-4"></i>
+                <h3 class="text-lg font-semibold mb-2">No scans yet</h3>
+                <p class="text-gray-400 mb-4">Start scanning websites to see your statistics here</p>
+                <a href="index.html" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    Run Your First Scan
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    const successRate = stats.total_checks > 0 ? Math.round((stats.total_passed / stats.total_checks) * 100) : 0;
+    
+    container.innerHTML = `
+        <div class="grid grid-cols-2 gap-4">
+            <div class="stat-card">
+                <div class="stat-number">${stats.total_scans}</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${stats.total_checks}</div>
+                <div class="stat-label">Security Checks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-green-400">${stats.total_passed}</div>
+                <div class="stat-label">Checks Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-red-400">${stats.total_failed}</div>
+                <div class="stat-label">Issues Found</div>
+            </div>
+        </div>
+        
+        <div class="mt-6 p-4 bg-gray-800 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium">Overall Security Score</span>
+                <span class="text-sm font-medium">${successRate}%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full" style="width: ${successRate}%"></div>
+            </div>
+        </div>
+        
+        ${stats.first_scan ? `
+        <div class="text-center text-sm text-gray-400">
+            <i class="fas fa-clock mr-1"></i>
+            First scan: ${new Date(stats.first_scan).toLocaleDateString()}
+            ${stats.last_scan ? `<br><i class="fas fa-calendar mr-1"></i>Last scan: ${new Date(stats.last_scan).toLocaleDateString()}` : ''}
+        </div>
+        ` : ''}
+    `;
+}
+
+// Handle profile update
+async function handleProfileUpdate(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData);
+    
+    // Validation
+    if (!data.username?.trim()) {
+        showProfileMessage('Username is required', 'error');
+        return;
+    }
+    
+    if (data['new-password'] && data['new-password'].length < 6) {
+        showProfileMessage('Password must be at least 6 characters long', 'error');
+        return;
+    }
+
+    const submitBtn = document.getElementById('update-profile-btn');
+    const originalHTML = submitBtn.innerHTML;
+    
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+        submitBtn.disabled = true;
+        
+        const updateData = {
+            username: data.username.trim()
+        };
+        
+        if (data['new-password']) {
+            updateData.password = data['new-password'];
+        }
+        
+        const response = await fetch(BACKEND_URL + '/api/profile', {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showProfileMessage(result.message || 'Profile updated successfully!', 'success');
+            
+            // Update localStorage
+            const userStr = localStorage.getItem('webSecuraUser');
+            if (userStr) {
+                const currentUser = JSON.parse(userStr);
+                currentUser.username = data.username.trim();
+                localStorage.setItem('webSecuraUser', JSON.stringify(currentUser));
+            }
+            
+            // Clear password field
+            if (document.getElementById('new-password')) {
+                document.getElementById('new-password').value = '';
+            }
+            
+            // Update navigation if needed
+            if (window.checkAuthStatus) {
+                window.checkAuthStatus();
+            }
+        } else {
+            showProfileMessage(result.error || 'Failed to update profile', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Profile update error:', error);
+        showProfileMessage('Failed to update profile. Please try again.', 'error');
+    } finally {
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.disabled = false;
+    }
+}
+
+// ==================== HISTORY PAGE FUNCTIONS ====================
+
+// History page variables
+let allScans = [];
+let currentPage = 1;
+const scansPerPage = 10;
+
+// Show history messages
+function showHistoryMessage(text, type = 'info') {
+    const messageEl = document.getElementById('history-message');
+    const textEl = document.getElementById('history-message-text');
+    
+    if (messageEl && textEl) {
+        textEl.textContent = text;
+        messageEl.className = `auth-message show ${type}`;
+        messageEl.style.display = 'block';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.className = 'auth-message hidden';
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+    }
+}
+
+// Load scan history
+async function loadHistory() {
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    try {
+        const response = await fetch(BACKEND_URL + '/api/history');
+        
+        if (response.ok) {
+            const data = await response.json();
+            allScans = data.scans || [];
+            displayScans();
+        } else if (response.status === 401) {
+            showHistoryMessage('Please log in to view your scan history', 'error');
+            setTimeout(() => {
+                window.location.href = 'auth.html';
+            }, 2000);
+        } else {
+            throw new Error('Failed to load history');
+        }
+    } catch (error) {
+        console.error('Failed to load history:', error);
+        showHistoryMessage('Failed to load scan history. Please try again.', 'error');
+        displayEmptyState();
+    }
+}
+
+// Display scans
+function displayScans(scansToShow = null) {
+    const container = document.getElementById('history-container');
+    if (!container) return;
+    
+    const scans = scansToShow || allScans;
+    
+    if (scans.length === 0) {
+        displayEmptyState();
+        return;
+    }
+
+    const startIndex = (currentPage - 1) * scansPerPage;
+    const endIndex = startIndex + scansPerPage;
+    const paginatedScans = scans.slice(startIndex, endIndex);
+
+    container.innerHTML = paginatedScans.map(scan => {
+        const scanDate = new Date(scan.scan_time);
+        const successRate = scan.total_checks > 0 ? Math.round((scan.passed_checks / scan.total_checks) * 100) : 0;
+        const statusColor = successRate >= 80 ? 'text-green-400' : successRate >= 60 ? 'text-yellow-400' : 'text-red-400';
+        const statusIcon = successRate >= 80 ? 'fa-shield-alt' : successRate >= 60 ? 'fa-exclamation-triangle' : 'fa-exclamation-circle';
+        
+        return `
+            <div class="scan-history-card" onclick="viewScanDetails(${scan.id})">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas ${statusIcon} ${statusColor}"></i>
+                            <h3 class="text-lg font-semibold truncate">${scan.url}</h3>
+                        </div>
+                        <div class="flex items-center gap-6 text-sm text-gray-400">
+                            <span>
+                                <i class="fas fa-calendar mr-1"></i>
+                                ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
+                            </span>
+                            <span>
+                                <i class="fas fa-check-circle mr-1 text-green-400"></i>
+                                ${scan.passed_checks}/${scan.total_checks} passed
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-center">
+                            <div class="text-xl font-bold ${statusColor}">${successRate}%</div>
+                            <div class="text-xs text-gray-400">Security</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button 
+                                onclick="event.stopPropagation(); viewScanDetails(${scan.id})" 
+                                class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                            >
+                                <i class="fas fa-eye mr-1"></i>View
+                            </button>
+                            <button 
+                                onclick="event.stopPropagation(); deleteScan(${scan.id})" 
+                                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                            >
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    displayPagination(scans.length);
+}
+
+// Display empty state
+function displayEmptyState() {
+    const container = document.getElementById('history-container');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="text-center py-12">
+            <i class="fas fa-history text-6xl text-gray-500 mb-6"></i>
+            <h3 class="text-2xl font-semibold mb-4">No scan history yet</h3>
+            <p class="text-gray-400 mb-6">Start scanning websites to build your security history</p>
+            <a href="index.html" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-lg transition-colors">
+                <i class="fas fa-shield-alt mr-2"></i>
+                Run Your First Scan
+            </a>
+        </div>
+    `;
+    const paginationContainer = document.getElementById('pagination-container');
+    if (paginationContainer) {
+        paginationContainer.innerHTML = '';
+    }
+}
+
+// Display pagination
+function displayPagination(totalScans) {
+    const container = document.getElementById('pagination-container');
+    if (!container) return;
+    
+    const totalPages = Math.ceil(totalScans / scansPerPage);
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let pagination = '<div class="flex items-center gap-2">';
+    
+    // Previous button
+    if (currentPage > 1) {
+        pagination += `
+            <button onclick="changePage(${currentPage - 1})" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+    }
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            pagination += `
+                <button class="px-3 py-2 bg-blue-600 text-white rounded">${i}</button>
+            `;
+        } else if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            pagination += `
+                <button onclick="changePage(${i})" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">${i}</button>
+            `;
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            pagination += '<span class="px-2 text-gray-400">...</span>';
+        }
+    }
+
+    // Next button
+    if (currentPage < totalPages) {
+        pagination += `
+            <button onclick="changePage(${currentPage + 1})" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+    }
+
+    pagination += '</div>';
+    container.innerHTML = pagination;
+}
+
+// Change page
+function changePage(page) {
+    currentPage = page;
+    displayScans();
+}
+
+// Filter scans
+function filterScans() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const filteredScans = allScans.filter(scan => 
+        scan.url.toLowerCase().includes(searchTerm)
+    );
+    currentPage = 1; // Reset to first page
+    displayScans(filteredScans);
+}
+
+// View scan details
+async function viewScanDetails(scanId) {
+    try {
+        const response = await fetch(BACKEND_URL + `/api/history/${scanId}`);
+        
+        if (response.ok) {
+            const scanData = await response.json();
+            displayScanModal(scanData);
+        } else {
+            showHistoryMessage('Failed to load scan details', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load scan details:', error);
+        showHistoryMessage('Failed to load scan details', 'error');
+    }
+}
+
+// Display scan modal
+function displayScanModal(scanData) {
+    const modal = document.getElementById('scan-modal');
+    const content = document.getElementById('scan-modal-content');
+    
+    if (!modal || !content) return;
+    
+    const scanDate = new Date(scanData.scan_time);
+    const successRate = scanData.summary.total_checks > 0 ? 
+        Math.round((scanData.summary.passed_checks / scanData.summary.total_checks) * 100) : 0;
+    
+    content.innerHTML = `
+        <div class="mb-6">
+            <h3 class="text-xl font-bold mb-2">${scanData.url}</h3>
+            <div class="flex items-center gap-4 text-sm text-gray-400">
+                <span>
+                    <i class="fas fa-calendar mr-1"></i>
+                    ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
+                </span>
+                <span>
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Security Score: ${successRate}%
+                </span>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div class="stat-card">
+                <div class="stat-number">${scanData.summary.total_checks}</div>
+                <div class="stat-label">Total Checks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-green-400">${scanData.summary.passed_checks}</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number text-red-400">${scanData.summary.failed_checks}</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold mb-4">Detailed Results</h4>
+            ${scanData.results.map(result => `
+                <div class="result-card ${result.passed ? 'border-green-500' : 'border-red-500'}">
+                    <div class="flex items-start gap-3">
+                        <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} mt-1"></i>
+                        <div class="flex-1">
+                            <h5 class="font-semibold mb-1">${result.check}</h5>
+                            <p class="text-gray-300 text-sm mb-2">${result.description}</p>
+                            ${result.details ? `<p class="text-xs text-gray-400">${result.details}</p>` : ''}
+                            ${!result.passed && result.recommendation ? `
+                                <div class="mt-2 p-2 bg-blue-900 bg-opacity-50 rounded border-l-2 border-blue-400">
+                                    <p class="text-sm"><strong>Recommendation:</strong> ${result.recommendation}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+// Close scan modal
+function closeScanModal() {
+    const modal = document.getElementById('scan-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Delete scan
+async function deleteScan(scanId) {
+    if (!confirm('Are you sure you want to delete this scan? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(BACKEND_URL + `/api/history/${scanId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showHistoryMessage('Scan deleted successfully', 'success');
+            loadHistory(); // Reload the history
+        } else {
+            showHistoryMessage('Failed to delete scan', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to delete scan:', error);
+        showHistoryMessage('Failed to delete scan', 'error');
+    }
+}
+
+// ==================== PAGE INITIALIZATION ====================
+
+// Auto-initialize based on page elements
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on profile page
+    if (document.getElementById('profileForm')) {
+        loadProfile();
+        
+        const profileForm = document.getElementById('profileForm');
+        profileForm.addEventListener('submit', handleProfileUpdate);
+    }
+    
+    // Check if we're on history page
+    if (document.getElementById('history-container')) {
+        loadHistory();
+        
+        // Close modal when clicking outside
+        const modal = document.getElementById('scan-modal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeScanModal();
+                }
+            });
+        }
+    }
+});

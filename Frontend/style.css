@@ -1323,3 +1323,46 @@ textarea.form-input {
         font-size: 0.95rem;
     }
 }
+
+/*----Profile Styles--------*/
+.profile-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .password-input-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .password-toggle:hover {
+            color: #4ade80;
+        }
+
+
+        /*----History Styles--------*/
+.history-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .max-h-90vh {
+            max-height: 90vh;
+        }
+        
+        .max-h-70vh {
+            max-height: 70vh;
+        }

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - WebSecura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Matrix Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
+    <!-- Header -->
+    <header class="relative z-50 flex items-center justify-between" style="padding: 0.5rem 1.5rem;">
+        <!-- Logo -->
+        <div class="flex items-center logo-container">
+            <div class="relative">
+                <a href="index.html">
+                    <img src="assests/WebLogo.webp" alt="WebSecura Logo" class="w-40 h-40 object-contain">
+                </a>
+            </div>
+        </div>
+        
+        <!-- Spacer -->
+        <div class="flex-1"></div>
+        
+        <!-- Navigation Menu Button -->
+        <button class="hamburger" id="hamburgerBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+    
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Navigation Menu -->
+    <div class="nav-menu" id="navMenu">
+        <button class="close-menu" id="closeMenuBtn">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="mt-16">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home mr-3"></i>Home
+            </a>
+            <a href="about.html" class="nav-item">
+                <i class="fas fa-info-circle mr-3"></i>About
+            </a>
+            <a href="contact.html" class="nav-item">
+                <i class="fas fa-envelope mr-3"></i>Contact
+            </a>
+            <a href="auth.html" class="nav-item">
+                <i class="fas fa-sign-in-alt mr-3"></i>Login
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="relative z-10 flex items-center justify-center min-h-screen px-6">
+        <!-- Profile Section -->
+        <div class="contact-container max-w-4xl mx-auto">
+            <div class="contact-card">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="contact-icon mb-4">
+                        <i class="fas fa-user-circle text-6xl logo-shield"></i>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                        User <span class="logo-shield">Profile</span>
+                    </h1>
+                    <p class="text-gray-300 text-lg">
+                        Manage your account settings and view your statistics
+                    </p>
+                    <div class="contact-divider"></div>
+                </div>
+
+                <!-- Messages -->
+                <div id="profile-message" class="auth-message hidden mb-6">
+                    <div class="message-content">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span id="profile-message-text"></span>
+                    </div>
+                </div>
+
+                <!-- Profile Content -->
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- Profile Information Card -->
+                    <div class="contact-form-section">
+                        <h2 class="text-2xl font-semibold mb-6 text-green-400">
+                            <i class="fas fa-user mr-3"></i>Profile Information
+                        </h2>
+                        <p class="text-gray-300 mb-6">Update your account details</p>
+
+                        <form id="profileForm" class="contact-form">
+                            <!-- Username -->
+                            <div class="form-group">
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-user mr-2"></i>Username
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    name="username" 
+                                    class="form-input" 
+                                    placeholder="Your username"
+                                    required
+                                />
+                            </div>
+
+                            <!-- Email (Read-only) -->
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope mr-2"></i>Email Address
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    class="form-input bg-gray-800 cursor-not-allowed" 
+                                    placeholder="your.email@example.com"
+                                    readonly
+                                />
+                                <p class="text-sm text-gray-400 mt-1">Email cannot be changed</p>
+                            </div>
+
+                            <!-- New Password -->
+                            <div class="form-group">
+                                <label for="new-password" class="form-label">
+                                    <i class="fas fa-lock mr-2"></i>New Password (optional)
+                                </label>
+                                <div class="password-input-container">
+                                    <input 
+                                        type="password" 
+                                        id="new-password" 
+                                        name="new-password" 
+                                        class="form-input" 
+                                        placeholder="Leave blank to keep current password"
+                                    />
+                                    <button type="button" class="password-toggle" onclick="togglePassword('new-password')">
+                                        <i class="fas fa-eye" id="new-password-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Member Since -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar mr-2"></i>Member Since
+                                </label>
+                                <div class="form-input bg-gray-800 cursor-not-allowed" id="member-since">
+                                    Loading...
+                                </div>
+                            </div>
+
+                            <!-- Update Button -->
+                            <button type="submit" class="submit-button" id="update-profile-btn">
+                                <i class="fas fa-save mr-2"></i>
+                                Update Profile
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Statistics Card -->
+                    <div class="contact-info-section">
+                        <h2 class="text-2xl font-semibold mb-6 text-green-400">
+                            <i class="fas fa-chart-bar mr-3"></i>Your Statistics
+                        </h2>
+                        <p class="text-gray-300 mb-6">Overview of your security scanning activity</p>
+
+                        <div class="space-y-6" id="stats-container">
+                            <!-- Loading state -->
+                            <div class="text-center py-8">
+                                <i class="fas fa-spinner fa-spin text-3xl logo-shield mb-4"></i>
+                                <p class="text-gray-300">Loading statistics...</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="social-section mt-8 pt-6 border-t border-gray-600">
+                            <h3 class="text-lg font-semibold mb-4 text-green-400">Quick Actions</h3>
+                            <div class="space-y-3">
+                                <a href="index.html" class="block w-full text-center py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                                    <i class="fas fa-shield-alt mr-2"></i>
+                                    Run New Scan
+                                </a>
+                                <a href="history.html" class="block w-full text-center py-3 px-4 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                                    <i class="fas fa-history mr-2"></i>
+                                    View Scan History
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    </body>
+</html>
