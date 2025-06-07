@@ -24,7 +24,11 @@ app.config['SECRET_KEY'] = secrets.token_hex(32)
 app.config['DATABASE'] = 'websecura.db'
 
 # Enable CORS with credentials support
-CORS(app, origins=['*'])
+CORS(app, 
+     origins=['https://websecura-1.onrender.com', 'http://localhost:3000', 'http://127.0.0.1:8000'],
+     supports_credentials=True,
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'])
 
 # Initialize the security scanner
 scanner = SecurityScanner()
