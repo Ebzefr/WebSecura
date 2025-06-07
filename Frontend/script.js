@@ -120,7 +120,7 @@ function initSearchFunctionality() {
         // Enter key support
         websiteUrl.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                searchBtn.click();
+                handleScan();
             }
         });
         
