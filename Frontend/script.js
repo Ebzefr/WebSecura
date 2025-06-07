@@ -1620,20 +1620,20 @@ function displayScans(scansToShow = null) {
         const statusIcon = successRate >= 80 ? 'fa-shield-alt' : successRate >= 60 ? 'fa-exclamation-triangle' : 'fa-exclamation-circle';
         
         return `
-            <div class="scan-history-card" onclick="viewScanDetails(${scan.id})">
-                <div class="scan-card-header">
+            <div class="history-scan-card" onclick="viewScanDetails(${scan.id})">
+                <div class="history-card-header">
                     <!-- URL Section -->
-                    <div class="scan-url-section">
+                    <div class="history-url-section">
                         <div class="flex items-center gap-3 mb-2">
                             <i class="fas ${statusIcon} ${statusColor} text-lg"></i>
-                            <h3 class="scan-url-title">${scan.url}</h3>
+                            <h3 class="history-url-title">${scan.url}</h3>
                         </div>
-                        <div class="scan-meta">
-                            <span class="scan-date">
+                        <div class="history-scan-meta">
+                            <span class="history-scan-date">
                                 <i class="fas fa-calendar mr-1"></i>
                                 ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
                             </span>
-                            <span class="scan-results">
+                            <span class="history-scan-results">
                                 <i class="fas fa-check-circle mr-1 text-green-400"></i>
                                 ${scan.passed_checks}/${scan.total_checks}
                             </span>
@@ -1641,15 +1641,15 @@ function displayScans(scansToShow = null) {
                     </div>
                     
                     <!-- Actions Section -->
-                    <div class="scan-actions-section">
-                        <div class="security-score">
-                            <div class="score-number ${statusColor}">${successRate}%</div>
-                            <div class="score-label">Security</div>
+                    <div class="history-actions-section">
+                        <div class="history-security-score">
+                            <div class="history-score-number ${statusColor}">${successRate}%</div>
+                            <div class="history-score-label">Security</div>
                         </div>
-                        <div class="action-buttons">
+                        <div class="history-action-buttons">
                             <button 
                                 onclick="event.stopPropagation(); viewScanDetails(${scan.id})" 
-                                class="action-btn view-btn"
+                                class="history-action-btn history-view-btn"
                                 title="View Details"
                             >
                                 <i class="fas fa-eye"></i>
@@ -1657,14 +1657,14 @@ function displayScans(scansToShow = null) {
                             </button>
                             <button 
                                 onclick="event.stopPropagation(); confirmDeleteScan(${scan.id})" 
-                                class="action-btn delete-btn"
+                                class="history-action-btn history-delete-btn"
                                 title="Delete Scan"
                             >
                                 <i class="fas fa-trash"></i>
                                 <span class="btn-text">Delete</span>
                             </button>
                         </div>
-                        <i class="fas fa-chevron-right chevron-icon"></i>
+                        <i class="fas fa-chevron-right history-chevron-icon"></i>
                     </div>
                 </div>
             </div>
@@ -1673,7 +1673,6 @@ function displayScans(scansToShow = null) {
 
     displayPagination(scans.length);
 }
-
 
 // Display empty state
 function displayEmptyState() {
@@ -1811,14 +1810,14 @@ function displayScanModal(scanData) {
         Math.round((scanData.summary.passed_checks / scanData.summary.total_checks) * 100) : 0;
     
     content.innerHTML = `
-        <div class="modal-header">
-            <h3 class="modal-title">${scanData.url}</h3>
-            <div class="modal-meta">
-                <span class="modal-date">
+        <div class="history-modal-header">
+            <h3 class="history-modal-title">${scanData.url}</h3>
+            <div class="history-modal-meta">
+                <span class="history-modal-date">
                     <i class="fas fa-calendar mr-1"></i>
                     ${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}
                 </span>
-                <span class="modal-score">
+                <span class="history-modal-score">
                     <i class="fas fa-shield-alt mr-1"></i>
                     Security Score: ${successRate}%
                 </span>
@@ -1826,47 +1825,47 @@ function displayScanModal(scanData) {
         </div>
 
         <!-- Download Buttons -->
-        <div class="download-buttons">
+        <div class="history-download-buttons">
             <button onclick="downloadScanPDF('${scanData.url}', ${JSON.stringify(scanData).replace(/"/g, '&quot;')})" 
-                    class="download-btn pdf-btn">
+                    class="history-download-btn history-pdf-btn">
                 <i class="fas fa-file-pdf mr-2"></i>
                 Download PDF
             </button>
             <button onclick="downloadScanJSON(${JSON.stringify(scanData).replace(/"/g, '&quot;')})" 
-                    class="download-btn json-btn">
+                    class="history-download-btn history-json-btn">
                 <i class="fas fa-file-code mr-2"></i>
                 Download JSON
             </button>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">${scanData.summary.total_checks}</div>
-                <div class="stat-label">Total Checks</div>
+        <div class="history-stats-grid">
+            <div class="history-stat-card">
+                <div class="history-stat-number">${scanData.summary.total_checks}</div>
+                <div class="history-stat-label">Total Checks</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number text-green-400">${scanData.summary.passed_checks}</div>
-                <div class="stat-label">Passed</div>
+            <div class="history-stat-card">
+                <div class="history-stat-number text-green-400">${scanData.summary.passed_checks}</div>
+                <div class="history-stat-label">Passed</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number text-red-400">${scanData.summary.failed_checks}</div>
-                <div class="stat-label">Failed</div>
+            <div class="history-stat-card">
+                <div class="history-stat-number text-red-400">${scanData.summary.failed_checks}</div>
+                <div class="history-stat-label">Failed</div>
             </div>
         </div>
 
-        <div class="results-section">
-            <h4 class="results-title">Detailed Results</h4>
-            <div class="results-list">
+        <div class="history-results-section">
+            <h4 class="history-results-title">Detailed Results</h4>
+            <div class="history-results-list">
                 ${scanData.results.map(result => `
-                    <div class="result-item ${result.passed ? 'result-passed' : 'result-failed'}">
-                        <div class="result-content">
-                            <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} result-icon"></i>
-                            <div class="result-details">
-                                <h5 class="result-title">${result.check}</h5>
-                                <p class="result-description">${result.description}</p>
-                                ${result.details ? `<p class="result-extra">${result.details}</p>` : ''}
+                    <div class="history-result-item ${result.passed ? 'history-result-passed' : 'history-result-failed'}">
+                        <div class="history-result-content">
+                            <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} history-result-icon"></i>
+                            <div class="history-result-details">
+                                <h5 class="history-result-title">${result.check}</h5>
+                                <p class="history-result-description">${result.description}</p>
+                                ${result.details ? `<p class="history-result-extra">${result.details}</p>` : ''}
                                 ${!result.passed && result.recommendation ? `
-                                    <div class="result-recommendation">
+                                    <div class="history-result-recommendation">
                                         <p><strong>Recommendation:</strong> ${result.recommendation}</p>
                                     </div>
                                 ` : ''}
@@ -1880,7 +1879,6 @@ function displayScanModal(scanData) {
     
     modal.classList.remove('hidden');
 }
-
 // Download functions (add these if not already present)
 function downloadScanPDF(url, scanData) {
     // Create PDF content
