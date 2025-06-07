@@ -875,31 +875,27 @@ style.textContent = `
 document.head.appendChild(style);
 
 //-----------------Authentication functionality ------------------//
-// Enhanced authentication with navigation updates
 const BACKEND_URL = window.location.hostname.includes('localhost')
   ? 'http://127.0.0.1:8000'
   : 'https://websecura.onrender.com';
 
 let isLoginMode = true;
 
-// Check authentication status on page load
-async function checkAuthStatus() {
+// Check authentication status using localStorage
+function checkAuthStatus() {
     try {
-        const response = await fetch(BACKEND_URL + '/api/auth/check', {
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.authenticated) {
-                updateNavigationForLoggedInUser(data.user);
-                return data.user;
-            }
+        const userStr = localStorage.getItem('webSecuraUser');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            updateNavigationForLoggedInUser(user);
+            return user;
+        } else {
+            updateNavigationForGuest();
+            return null;
         }
-        updateNavigationForGuest();
-        return null;
     } catch (error) {
         console.log('Auth check failed:', error);
+        localStorage.removeItem('webSecuraUser'); // Clear corrupted data
         updateNavigationForGuest();
         return null;
     }
@@ -934,7 +930,7 @@ function updateNavigationForLoggedInUser(user) {
                 </a>
                 <div class="nav-user-info">
                     <i class="fas fa-user-circle mr-2"></i>
-                    <span>Welcome, ${user.username}</span>
+                    <span>Welcome, ${user.username || user.email}</span>
                 </div>
             `;
         }
@@ -943,7 +939,7 @@ function updateNavigationForLoggedInUser(user) {
     // Update any user display elements
     const userDisplays = document.querySelectorAll('.user-display');
     userDisplays.forEach(el => {
-        el.textContent = user.username;
+        el.textContent = user.username || user.email;
         el.style.display = 'block';
     });
 }
@@ -982,24 +978,21 @@ function updateNavigationForGuest() {
 // Logout function
 async function logout() {
     try {
-        const response = await fetch(BACKEND_URL + '/api/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
+        // Try to logout from server (but don't fail if it doesn't work due to CORS)
+        fetch(BACKEND_URL + '/api/logout', {
+            method: 'POST'
+        }).catch(console.warn); // Don't let CORS errors break logout
         
-        if (response.ok) {
-            // Clear local storage
-            localStorage.removeItem('webSecuraUser');
-            
-            // Update navigation
-            updateNavigationForGuest();
-            
-            // Redirect to home
-            window.location.href = 'index.html';
-        }
+        // Always clear local storage and update navigation
+        localStorage.removeItem('webSecuraUser');
+        updateNavigationForGuest();
+        
+        // Redirect to home
+        window.location.href = 'index.html';
+        
     } catch (error) {
         console.error('Logout failed:', error);
-        // Force logout locally even if server request fails
+        // Force logout locally
         localStorage.removeItem('webSecuraUser');
         updateNavigationForGuest();
         window.location.href = 'index.html';
@@ -1136,7 +1129,7 @@ async function handleAuthSubmit(event) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            credentials: 'include',
+            // Remove credentials to avoid CORS issues for now
             body: JSON.stringify(requestBody)
         });
         
@@ -1183,9 +1176,9 @@ async function handleAuthSubmit(event) {
 }
 
 // Initialize functionality when page loads
-document.addEventListener('DOMContentLoaded', async function() {
-    // Check authentication status on every page
-    await checkAuthStatus();
+document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication status on every page using localStorage
+    checkAuthStatus();
     
     // Only run auth form logic on auth page
     const authForm = document.getElementById('authForm');
