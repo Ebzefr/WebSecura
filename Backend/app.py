@@ -300,7 +300,7 @@ def scan_website():
         }
         
         # Save to history if user is logged in
-        if 'user_id' in session:
+        if user_id:
             try:
                 conn = get_db()
                 cursor = conn.cursor()
