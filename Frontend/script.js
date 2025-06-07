@@ -97,8 +97,9 @@ function initSearchFunctionality() {
     const websiteUrl = document.getElementById('websiteUrl');
     
     if (searchBtn && websiteUrl) {
-        // Search button click
-        searchBtn.addEventListener('click', function() {
+        
+        // Create a single function to handle the scan
+        function handleScan() {
             const url = websiteUrl.value.trim();
             if (!url) {
                 alert('Please enter a website URL');
@@ -115,12 +116,16 @@ function initSearchFunctionality() {
             
             // Call Flask backend
             performSecurityScan(url);
-        });
+        }
         
-        // Enter key support
+        // Search button click
+        searchBtn.addEventListener('click', handleScan);
+        
+        // Enter key support - call handleScan directly instead of clicking button
         websiteUrl.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                handleScan();
+                e.preventDefault(); // Prevent any default form submission
+                handleScan(); // Call the function directly
             }
         });
         
@@ -133,6 +138,21 @@ function initSearchFunctionality() {
             this.parentElement.parentElement.style.transform = 'scale(1)';
         });
     }
+}
+
+// Also add this to prevent any form submissions if your input is in a form
+function preventFormSubmission() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        // Check if this form contains the search input
+        const hasSearchInput = form.querySelector('#websiteUrl');
+        if (hasSearchInput) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevent form submission
+                return false;
+            });
+        }
+    });
 }
 
 async function performSecurityScan(url) {
