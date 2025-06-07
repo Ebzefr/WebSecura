@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 from functools import wraps
 import json
+import traceback
 
 # Add the scanner module to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scanner'))
@@ -79,7 +80,7 @@ def init_db():
     conn.close()
     print("Database tables created successfully!")
 
-# CALL IT IMMEDIATELY - This ensures tables are created when the app starts
+# ensures tables are created when the app starts
 try:
     init_db()
 except Exception as e:
@@ -139,49 +140,111 @@ def serve_static(filename):
 # Authentication Routes
 @app.route('/api/register', methods=['POST'])
 def register():
-    """User registration endpoint"""
+    """User registration endpoint with detailed debugging"""
     try:
+        print("=== REGISTER ENDPOINT CALLED ===")
+        
+        # Check if request has JSON data
+        if not request.is_json:
+            print(f"Request is not JSON. Content-Type: {request.content_type}")
+            return jsonify({'error': 'Request must be JSON'}), 400
+        
         data = request.get_json()
+        print(f"Received data: {data}")
+        
+        if not data:
+            print("No JSON data received")
+            return jsonify({'error': 'No data provided'}), 400
         
         # Validate required fields
         required_fields = ['username', 'email', 'password']
         for field in required_fields:
             if not data.get(field):
+                print(f"Missing field: {field}")
                 return jsonify({'error': f'{field.title()} is required'}), 400
         
         username = data['username'].strip()
         email = data['email'].strip().lower()
         password = data['password']
+        print(f"Processed - Username: {username}, Email: {email}, Password length: {len(password)}")
         
         # Validate password length
         if len(password) < 6:
+            print("Password too short")
             return jsonify({'error': 'Password must be at least 6 characters long'}), 400
         
-        # Check if user already exists
-        conn = get_db()
-        cursor = conn.cursor()
+        # Test database connection
+        print("Testing database connection...")
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            print("Database connection successful")
+        except Exception as db_error:
+            print(f"Database connection failed: {db_error}")
+            return jsonify({'error': f'Database connection failed: {str(db_error)}'}), 500
         
-        cursor.execute('SELECT id FROM users WHERE email = ? OR username = ?', (email, username))
-        if cursor.fetchone():
+        # Check if user already exists
+        print("Checking if user exists...")
+        try:
+            cursor.execute('SELECT id FROM users WHERE email = ? OR username = ?', (email, username))
+            existing_user = cursor.fetchone()
+            if existing_user:
+                conn.close()
+                print(f"User already exists with ID: {existing_user[0]}")
+                return jsonify({'error': 'User with this email or username already exists'}), 400
+            print("User does not exist, proceeding with creation")
+        except Exception as check_error:
+            print(f"Error checking existing user: {check_error}")
             conn.close()
-            return jsonify({'error': 'User with this email or username already exists'}), 400
+            return jsonify({'error': f'Error checking user: {str(check_error)}'}), 500
+        
+        # Create password hash
+        print("Creating password hash...")
+        try:
+            password_hash = generate_password_hash(password)
+            print("Password hash created successfully")
+        except Exception as hash_error:
+            print(f"Error creating password hash: {hash_error}")
+            conn.close()
+            return jsonify({'error': f'Error creating password hash: {str(hash_error)}'}), 500
         
         # Create new user
-        password_hash = generate_password_hash(password)
-        cursor.execute(
-            'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-            (username, email, password_hash)
-        )
+        print("Inserting new user into database...")
+        try:
+            cursor.execute(
+                'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
+                (username, email, password_hash)
+            )
+            user_id = cursor.lastrowid
+            print(f"User inserted with ID: {user_id}")
+        except Exception as insert_error:
+            print(f"Error inserting user: {insert_error}")
+            conn.close()
+            return jsonify({'error': f'Error creating user: {str(insert_error)}'}), 500
         
-        user_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
+        # Commit and close
+        print("Committing transaction...")
+        try:
+            conn.commit()
+            conn.close()
+            print("Transaction committed successfully")
+        except Exception as commit_error:
+            print(f"Error committing transaction: {commit_error}")
+            conn.close()
+            return jsonify({'error': f'Error saving user: {str(commit_error)}'}), 500
         
-        # Log the user in
-        session['user_id'] = user_id
-        session['username'] = username
-        session['email'] = email
+        # Create session
+        print("Creating user session...")
+        try:
+            session['user_id'] = user_id
+            session['username'] = username
+            session['email'] = email
+            print("Session created successfully")
+        except Exception as session_error:
+            print(f"Error creating session: {session_error}")
+            return jsonify({'error': f'Error creating session: {str(session_error)}'}), 500
         
+        print("=== REGISTRATION COMPLETED SUCCESSFULLY ===")
         return jsonify({
             'message': 'Account created successfully',
             'user': {
@@ -192,48 +255,16 @@ def register():
         })
         
     except Exception as e:
+        print(f"=== UNEXPECTED ERROR ===")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        
+        # Get full traceback
+        import traceback
+        full_traceback = traceback.format_exc()
+        print(f"Full traceback:\n{full_traceback}")
+        
         return jsonify({'error': f'Registration failed: {str(e)}'}), 500
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    """User login endpoint"""
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if not data.get('email') or not data.get('password'):
-            return jsonify({'error': 'Email and password are required'}), 400
-        
-        email = data['email'].strip().lower()
-        password = data['password']
-        
-        # Check user credentials
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT id, username, email, password_hash FROM users WHERE email = ?', (email,))
-        user = cursor.fetchone()
-        conn.close()
-        
-        if not user or not check_password_hash(user['password_hash'], password):
-            return jsonify({'error': 'Invalid email or password'}), 401
-        
-        # Log the user in
-        session['user_id'] = user['id']
-        session['username'] = user['username']
-        session['email'] = user['email']
-        
-        return jsonify({
-            'message': 'Login successful',
-            'user': {
-                'id': user['id'],
-                'username': user['username'],
-                'email': user['email']
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Login failed: {str(e)}'}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
