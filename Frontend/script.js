@@ -1503,8 +1503,10 @@ function showHistoryMessage(text, type = 'info') {
 
 // Load scan history
 async function loadHistory() {
+    // Get user from localStorage (same as scan function)
     const userStr = localStorage.getItem('webSecuraUser');
     if (!userStr) {
+        console.log('No user in localStorage, redirecting to auth');
         window.location.href = 'auth.html';
         return;
     }
@@ -1512,27 +1514,51 @@ async function loadHistory() {
     let currentUser;
     try {
         currentUser = JSON.parse(userStr);
+        console.log('Loading history for user:', currentUser.id); // Debug log
     } catch (error) {
+        console.error('Invalid user data in localStorage:', error);
         localStorage.removeItem('webSecuraUser');
         window.location.href = 'auth.html';
         return;
     }
 
+    // Make sure we have a user ID
+    if (!currentUser.id) {
+        console.error('No user ID found in localStorage');
+        showHistoryMessage('Invalid user session. Please log in again.', 'error');
+        setTimeout(() => {
+            window.location.href = 'auth.html';
+        }, 2000);
+        return;
+    }
+
     try {
-        // Pass user_id as query parameter
-        const response = await fetch(BACKEND_URL + `/api/history?user_id=${currentUser.id}`);
+        // Use the same BACKEND_URL as the scan function
+        const historyUrl = BACKEND_URL + `/api/history?user_id=${currentUser.id}`;
+        console.log('Fetching history from:', historyUrl); // Debug log
+        
+        const response = await fetch(historyUrl);
+        console.log('History response status:', response.status); // Debug log
         
         if (response.ok) {
             const data = await response.json();
+            console.log('History data received:', data); // Debug log
             allScans = data.scans || [];
+            console.log('Number of scans found:', allScans.length); // Debug log
             displayScans();
-        } else if (response.status === 401) {
-            showHistoryMessage('Please log in to view your scan history', 'error');
-            setTimeout(() => {
-                window.location.href = 'auth.html';
-            }, 2000);
         } else {
-            throw new Error('Failed to load history');
+            const errorText = await response.text();
+            console.error('History API error:', response.status, errorText);
+            
+            if (response.status === 401) {
+                showHistoryMessage('Please log in to view your scan history', 'error');
+                setTimeout(() => {
+                    window.location.href = 'auth.html';
+                }, 2000);
+            } else {
+                showHistoryMessage('Failed to load scan history. Please try again.', 'error');
+                displayEmptyState();
+            }
         }
     } catch (error) {
         console.error('Failed to load history:', error);
@@ -1705,8 +1731,23 @@ function filterScans() {
 
 // View scan details
 async function viewScanDetails(scanId) {
+    // Get user from localStorage
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    let currentUser;
     try {
-        const response = await fetch(BACKEND_URL + `/api/history/${scanId}`);
+        currentUser = JSON.parse(userStr);
+    } catch (error) {
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    try {
+        const response = await fetch(BACKEND_URL + `/api/history/${scanId}?user_id=${currentUser.id}`);
         
         if (response.ok) {
             const scanData = await response.json();

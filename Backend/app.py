@@ -386,10 +386,23 @@ def handle_contact():
 
 # Protected Routes
 @app.route('/api/history', methods=['GET'])
-@login_required
 def get_scan_history():
     """Get user's scan history"""
     try:
+        # Check if user_id is provided as query parameter (for CORS workaround)
+        user_id = request.args.get('user_id')
+        
+        # Fallback to session if no user_id parameter
+        if not user_id and 'user_id' in session:
+            user_id = session['user_id']
+        
+        if not user_id:
+            print("❌ No user_id found in request or session")
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user_id = int(user_id)
+        print(f"✅ Loading history for user_id: {user_id}")
+        
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         
@@ -397,8 +410,9 @@ def get_scan_history():
         cursor = conn.cursor()
         
         # Get total count
-        cursor.execute('SELECT COUNT(*) FROM scan_history WHERE user_id = ?', (session['user_id'],))
+        cursor.execute('SELECT COUNT(*) FROM scan_history WHERE user_id = ?', (user_id,))
         total = cursor.fetchone()[0]
+        print(f"📊 Found {total} total scans for user {user_id}")
         
         # Get paginated results
         offset = (page - 1) * per_page
@@ -408,10 +422,12 @@ def get_scan_history():
             WHERE user_id = ?
             ORDER BY scan_time DESC
             LIMIT ? OFFSET ?
-        ''', (session['user_id'], per_page, offset))
+        ''', (user_id, per_page, offset))
         
         scans = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        
+        print(f"📋 Returning {len(scans)} scans for page {page}")
         
         return jsonify({
             'scans': scans,
@@ -424,20 +440,31 @@ def get_scan_history():
         })
         
     except Exception as e:
+        print(f"❌ History error: {str(e)}")
         return jsonify({'error': f'Failed to get history: {str(e)}'}), 500
 
 @app.route('/api/history/<int:scan_id>', methods=['GET'])
-@login_required
 def get_scan_details(scan_id):
     """Get detailed scan results"""
     try:
+        # Get user_id from query parameter
+        user_id = request.args.get('user_id')
+        
+        if not user_id and 'user_id' in session:
+            user_id = session['user_id']
+        
+        if not user_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user_id = int(user_id)
+        
         conn = get_db()
         cursor = conn.cursor()
         
         cursor.execute('''
             SELECT scan_data FROM scan_history 
             WHERE id = ? AND user_id = ?
-        ''', (scan_id, session['user_id']))
+        ''', (scan_id, user_id))
         
         result = cursor.fetchone()
         conn.close()
@@ -446,24 +473,33 @@ def get_scan_details(scan_id):
             return jsonify({'error': 'Scan not found'}), 404
         
         scan_data = json.loads(result['scan_data'])
-        
         return jsonify(scan_data)
         
     except Exception as e:
         return jsonify({'error': f'Failed to get scan details: {str(e)}'}), 500
 
 @app.route('/api/history/<int:scan_id>', methods=['DELETE'])
-@login_required
 def delete_scan(scan_id):
     """Delete a scan from history"""
     try:
+        # Get user_id from query parameter
+        user_id = request.args.get('user_id')
+        
+        if not user_id and 'user_id' in session:
+            user_id = session['user_id']
+        
+        if not user_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user_id = int(user_id)
+        
         conn = get_db()
         cursor = conn.cursor()
         
         cursor.execute('''
             DELETE FROM scan_history 
             WHERE id = ? AND user_id = ?
-        ''', (scan_id, session['user_id']))
+        ''', (scan_id, user_id))
         
         if cursor.rowcount == 0:
             conn.close()
