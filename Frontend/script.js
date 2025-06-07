@@ -1458,8 +1458,18 @@ async function loadHistory() {
         return;
     }
 
+    let currentUser;
     try {
-        const response = await fetch(BACKEND_URL + '/api/history');
+        currentUser = JSON.parse(userStr);
+    } catch (error) {
+        localStorage.removeItem('webSecuraUser');
+        window.location.href = 'auth.html';
+        return;
+    }
+
+    try {
+        // Pass user_id as query parameter
+        const response = await fetch(BACKEND_URL + `/api/history?user_id=${currentUser.id}`);
         
         if (response.ok) {
             const data = await response.json();
