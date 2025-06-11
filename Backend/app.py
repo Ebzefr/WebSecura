@@ -131,10 +131,10 @@ def register_page():
     """Serve the register page"""
     return send_from_directory('../frontend', 'register.html')
 
-@app.route('/dashboard')
-def dashboard():
-    """Serve the dashboard page"""
-    return send_from_directory('../frontend', 'dashboard.html')
+
+@app.route('/admin')
+def admin_dashboard():
+    return send_from_directory('../frontend', 'admin.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
@@ -705,6 +705,7 @@ def get_admin_users():
         
     except Exception as e:
         return jsonify({'error': f'Failed to get users: {str(e)}'}), 500
+    
 
 @app.route('/api/admin/users/<int:user_id>', methods=['GET'])
 def get_admin_user_details(user_id):
@@ -1153,6 +1154,7 @@ def login():
         
     except Exception as e:
         return jsonify({'error': f'Login failed: {str(e)}'}), 500
+    
 
 # Update your existing register endpoint to support creating admin users
 @app.route('/api/register', methods=['POST'])
@@ -1218,3 +1220,7 @@ def register():
         
     except Exception as e:
         return jsonify({'error': f'Registration failed: {str(e)}'}), 500 
+    
+    
+    
+   

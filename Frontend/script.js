@@ -1026,13 +1026,19 @@ function updateNavigationForLoggedInUser(user) {
 }
 
 // Update navigation menu for guests
-function updateNavigationForGuest() {
+
+function updateNavigationForLoggedInUser(user) {
     const navMenu = document.getElementById('navMenu');
     if (navMenu) {
+        // Find the navigation items container
         const navContainer = navMenu.querySelector('.mt-16') || navMenu.querySelector('div');
         
         if (navContainer) {
-            navContainer.innerHTML = `
+            // Check if user is admin
+            const isAdmin = user.is_admin === 1 || user.is_admin === true || user.is_admin === "true";
+            
+            // Build navigation items
+            let navItems = `
                 <a href="index.html" class="nav-item">
                     <i class="fas fa-home mr-3"></i>Home
                 </a>
@@ -1042,19 +1048,49 @@ function updateNavigationForGuest() {
                 <a href="contact.html" class="nav-item">
                     <i class="fas fa-envelope mr-3"></i>Contact
                 </a>
-                <a href="auth.html" class="nav-item">
-                    <i class="fas fa-sign-in-alt mr-3"></i>Login
+                <a href="history.html" class="nav-item">
+                    <i class="fas fa-history mr-3"></i>Scan History
                 </a>
+                <a href="profile.html" class="nav-item">
+                    <i class="fas fa-user mr-3"></i>Profile
+                </a>`;
+            
+            // Add admin menu if user is admin
+            if (isAdmin) {
+                navItems += `
+                <a href="admin.html" class="nav-item" style="color: #f59e0b; border-left: 3px solid #f59e0b;">
+                    <i class="fas fa-cog mr-3"></i>Admin Panel
+                </a>`;
+            }
+            
+            navItems += `
+                <a href="#" class="nav-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                </a>
+                <div class="nav-user-info">
+                    <i class="fas fa-user-circle mr-2"></i>
+                    <span>Welcome, ${user.username || user.email}${isAdmin ? ' (Admin)' : ''}</span>
+                </div>
             `;
+            
+            navContainer.innerHTML = navItems;
         }
     }
+    
+    // Update any user display elements
+    const userDisplays = document.querySelectorAll('.user-display');
+    userDisplays.forEach(el => {
+        el.textContent = user.username || user.email;
+        el.style.display = 'block';
+    });
+}
     
     // Hide user display elements
     const userDisplays = document.querySelectorAll('.user-display');
     userDisplays.forEach(el => {
         el.style.display = 'none';
     });
-}
+
 
 // Logout function
 async function logout() {
@@ -1210,7 +1246,6 @@ async function handleAuthSubmit(event) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            // Remove credentials to avoid CORS issues for now
             body: JSON.stringify(requestBody)
         });
         
@@ -1232,11 +1267,28 @@ async function handleAuthSubmit(event) {
                 
                 // Update navigation immediately
                 updateNavigationForLoggedInUser(result.user);
+                
+                // Check if user is admin and redirect accordingly
+                const isAdmin = result.user.is_admin === 1 || result.user.is_admin === true || result.user.is_admin === "true";
+                
+                console.log('User login result:', result.user);
+                console.log('Is admin?', isAdmin);
+                
+                setTimeout(() => {
+                    if (isAdmin) {
+                        console.log('Redirecting admin to admin panel...');
+                        window.location.href = 'admin.html';
+                    } else {
+                        console.log('Redirecting regular user to dashboard...');
+                        window.location.href = 'dashboard.html';
+                    }
+                }, 1500);
+            } else {
+                // Fallback if no user data
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
             }
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
         } else {
             showMessage(result.error || 'Authentication failed', 'error');
         }
@@ -1255,7 +1307,6 @@ async function handleAuthSubmit(event) {
         submitBtn.disabled = false;
     }
 }
-
 // Initialize functionality when page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication status on every page using localStorage
