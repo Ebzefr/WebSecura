@@ -982,51 +982,8 @@ function checkAuthStatus() {
     }
 }
 
+
 // Update navigation menu for logged-in users
-function updateNavigationForLoggedInUser(user) {
-    const navMenu = document.getElementById('navMenu');
-    if (navMenu) {
-        // Find the navigation items container
-        const navContainer = navMenu.querySelector('.mt-16') || navMenu.querySelector('div');
-        
-        if (navContainer) {
-            navContainer.innerHTML = `
-                <a href="index.html" class="nav-item">
-                    <i class="fas fa-home mr-3"></i>Home
-                </a>
-                <a href="about.html" class="nav-item">
-                    <i class="fas fa-info-circle mr-3"></i>About
-                </a>
-                <a href="contact.html" class="nav-item">
-                    <i class="fas fa-envelope mr-3"></i>Contact
-                </a>
-                <a href="history.html" class="nav-item">
-                    <i class="fas fa-history mr-3"></i>Scan History
-                </a>
-                <a href="profile.html" class="nav-item">
-                    <i class="fas fa-user mr-3"></i>Profile
-                </a>
-                <a href="#" class="nav-item" onclick="logout()">
-                    <i class="fas fa-sign-out-alt mr-3"></i>Logout
-                </a>
-                <div class="nav-user-info">
-                    <i class="fas fa-user-circle mr-2"></i>
-                    <span>Welcome, ${user.username || user.email}</span>
-                </div>
-            `;
-        }
-    }
-    
-    // Update any user display elements
-    const userDisplays = document.querySelectorAll('.user-display');
-    userDisplays.forEach(el => {
-        el.textContent = user.username || user.email;
-        el.style.display = 'block';
-    });
-}
-
-// Update navigation menu for guests
-
 function updateNavigationForLoggedInUser(user) {
     const navMenu = document.getElementById('navMenu');
     if (navMenu) {
@@ -1084,13 +1041,37 @@ function updateNavigationForLoggedInUser(user) {
         el.style.display = 'block';
     });
 }
+
+// Update navigation menu for guests
+function updateNavigationForGuest() {
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu) {
+        const navContainer = navMenu.querySelector('.mt-16') || navMenu.querySelector('div');
+        
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home mr-3"></i>Home
+                </a>
+                <a href="about.html" class="nav-item">
+                    <i class="fas fa-info-circle mr-3"></i>About
+                </a>
+                <a href="contact.html" class="nav-item">
+                    <i class="fas fa-envelope mr-3"></i>Contact
+                </a>
+                <a href="auth.html" class="nav-item">
+                    <i class="fas fa-sign-in-alt mr-3"></i>Login
+                </a>
+            `;
+        }
+    }
     
     // Hide user display elements
     const userDisplays = document.querySelectorAll('.user-display');
     userDisplays.forEach(el => {
         el.style.display = 'none';
     });
-
+}
 
 // Logout function
 async function logout() {
