@@ -1298,7 +1298,6 @@ function showProfileMessage(text, type = 'info') {
 }
 
 // Load user profile data
-// Fixed loadProfile function with proper user_id handling
 async function loadProfile() {
     const userStr = localStorage.getItem('webSecuraUser');
     if (!userStr) {
@@ -2108,6 +2107,753 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
                     closeScanModal();
+                }
+            });
+        }
+    }
+});
+
+
+// ==================== ADMIN LOGIC ====================//
+// Check admin authentication
+function checkAdminAuth() {
+    const userStr = localStorage.getItem('webSecuraUser');
+    if (!userStr) {
+        redirectToLogin();
+        return false;
+    }
+    
+    try {
+        const user = JSON.parse(userStr);
+        if (!user.is_admin) {
+            showAdminMessage('Access denied. Admin privileges required.', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        redirectToLogin();
+        return false;
+    }
+}
+
+function redirectToLogin() {
+    showAdminMessage('Please log in as an admin to access this page.', 'error');
+    setTimeout(() => {
+        window.location.href = 'auth.html';
+    }, 2000);
+}
+
+// Show admin messages
+function showAdminMessage(text, type = 'info') {
+    const messageEl = document.getElementById('admin-message');
+    const textEl = document.getElementById('admin-message-text');
+    
+    if (messageEl && textEl) {
+        textEl.textContent = text;
+        messageEl.className = `auth-message show ${type}`;
+        messageEl.style.display = 'block';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.className = 'auth-message hidden';
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+    }
+}
+
+// Tab switching
+function switchTab(tabName) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    document.getElementById(`${tabName}-content`).classList.add('active');
+    
+    // Load content based on tab
+    switch(tabName) {
+        case 'users':
+            loadUsers();
+            break;
+        case 'scans':
+            loadScans();
+            break;
+        case 'messages':
+            loadMessages();
+            break;
+        case 'system':
+            loadSystemInfo();
+            break;
+    }
+}
+
+// Load dashboard statistics
+async function loadDashboardStats() {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/stats?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const stats = await response.json();
+            
+            document.getElementById('total-users').textContent = stats.total_users || 0;
+            document.getElementById('total-scans').textContent = stats.total_scans || 0;
+            document.getElementById('total-messages').textContent = stats.total_messages || 0;
+            document.getElementById('avg-security-score').textContent = 
+                stats.avg_security_score ? `${Math.round(stats.avg_security_score)}%` : '0%';
+        } else {
+            console.error('Failed to load dashboard stats');
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+// Load users
+async function loadUsers() {
+    const tbody = document.getElementById('users-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/users?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const users = data.users || [];
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">No users found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            ${user.username}
+                            ${user.is_admin ? '<span class="status-badge warning">Admin</span>' : ''}
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${user.scan_count || 0}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="actions">
+                            <button onclick="viewUserDetails(${user.id})" class="admin-btn secondary">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${!user.is_admin ? `
+                            <button onclick="toggleUserStatus(${user.id}, ${user.is_active !== false})" 
+                                    class="admin-btn ${user.is_active !== false ? 'danger' : 'success'}">
+                                <i class="fas fa-${user.is_active !== false ? 'ban' : 'check'}"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Failed to load users</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Error loading users</td></tr>';
+    }
+}
+
+// Load scans
+async function loadScans() {
+    const tbody = document.getElementById('scans-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/scans?admin_id=${user.id}&limit=50`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const scans = data.scans || [];
+            
+            if (scans.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">No scans found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = scans.map(scan => {
+                const securityScore = scan.total_checks > 0 ? 
+                    Math.round((scan.passed_checks / scan.total_checks) * 100) : 0;
+                const scoreClass = securityScore >= 80 ? 'high' : securityScore >= 60 ? 'medium' : 'low';
+                
+                return `
+                    <tr>
+                        <td>${scan.id}</td>
+                        <td>${scan.username || 'Unknown'}</td>
+                        <td>
+                            <div class="max-w-xs truncate" title="${scan.url}">
+                                ${scan.url}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="security-score ${scoreClass}">
+                                ${securityScore}%
+                            </span>
+                        </td>
+                        <td>${new Date(scan.scan_time).toLocaleDateString()}</td>
+                        <td>
+                            <div class="actions">
+                                <button onclick="viewScanDetails(${scan.id})" class="admin-btn secondary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="deleteScanAdmin(${scan.id})" class="admin-btn danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Failed to load scans</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading scans:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Error loading scans</td></tr>';
+    }
+}
+
+// Load messages
+async function loadMessages() {
+    const tbody = document.getElementById('messages-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/messages?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const messages = data.messages || [];
+            
+            if (messages.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">No messages found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = messages.map(message => `
+                <tr class="${message.is_read ? '' : 'bg-blue-900 bg-opacity-20'}">
+                    <td>${message.id}</td>
+                    <td>${message.name}</td>
+                    <td>${message.email}</td>
+                    <td>
+                        <div class="max-w-xs truncate" title="${message.subject}">
+                            ${message.subject}
+                        </div>
+                    </td>
+                    <td>${new Date(message.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="actions">
+                            <button onclick="viewMessage(${message.id})" class="admin-btn secondary">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${!message.is_read ? `
+                            <button onclick="markMessageRead(${message.id})" class="admin-btn success">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            ` : ''}
+                            <button onclick="deleteMessage(${message.id})" class="admin-btn danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Failed to load messages</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-400">Error loading messages</td></tr>';
+    }
+}
+
+// Load system information
+async function loadSystemInfo() {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        // Database status
+        document.getElementById('db-status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+        
+        // Server health
+        document.getElementById('server-health').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+        
+        // Recent activity
+        document.getElementById('recent-activity').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/system?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Database status
+            document.getElementById('db-status').innerHTML = `
+                <div class="status-badge ${data.database_status === 'connected' ? 'online' : 'offline'}">
+                    <i class="fas fa-${data.database_status === 'connected' ? 'check' : 'times'} mr-1"></i>
+                    ${data.database_status === 'connected' ? 'Connected' : 'Disconnected'}
+                </div>
+                <div class="mt-2 text-sm">
+                    Tables: ${data.table_count || 0}<br>
+                    Last backup: ${data.last_backup || 'Never'}
+                </div>
+            `;
+            
+            // Server health
+            document.getElementById('server-health').innerHTML = `
+                <div class="status-badge online">
+                    <i class="fas fa-check mr-1"></i>Online
+                </div>
+                <div class="mt-2 text-sm">
+                    Uptime: ${data.uptime || 'Unknown'}<br>
+                    Version: ${data.version || '1.0.0'}
+                </div>
+            `;
+            
+            // Recent activity
+            const activities = data.recent_activity || [];
+            document.getElementById('recent-activity').innerHTML = activities.length > 0 ? 
+                activities.map(activity => `
+                    <div class="mb-2 pb-2 border-b border-gray-600 last:border-b-0">
+                        <div class="text-sm">${activity.action}</div>
+                        <div class="text-xs text-gray-400">${new Date(activity.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('') : '<div class="text-gray-400">No recent activity</div>';
+        } else {
+            document.getElementById('db-status').innerHTML = '<span class="status-badge offline">Error</span>';
+            document.getElementById('server-health').innerHTML = '<span class="status-badge offline">Error</span>';
+            document.getElementById('recent-activity').innerHTML = '<span class="text-red-400">Failed to load</span>';
+        }
+    } catch (error) {
+        console.error('Error loading system info:', error);
+    }
+}
+
+// View user details
+async function viewUserDetails(userId) {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/users/${userId}?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const userData = await response.json();
+            
+            document.getElementById('modal-title').textContent = `User Details - ${userData.username}`;
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Username</label>
+                            <div class="text-gray-300">${userData.username}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <div class="text-gray-300">${userData.email}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Status</label>
+                            <span class="status-badge ${userData.is_active !== false ? 'online' : 'offline'}">
+                                ${userData.is_active !== false ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Role</label>
+                            <span class="status-badge ${userData.is_admin ? 'warning' : 'online'}">
+                                ${userData.is_admin ? 'Admin' : 'User'}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Joined</label>
+                            <div class="text-gray-300">${new Date(userData.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Total Scans</label>
+                            <div class="text-gray-300">${userData.scan_count || 0}</div>
+                        </div>
+                    </div>
+                    
+                    ${userData.recent_scans && userData.recent_scans.length > 0 ? `
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Recent Scans</label>
+                        <div class="space-y-2">
+                            ${userData.recent_scans.map(scan => `
+                                <div class="bg-gray-700 p-3 rounded">
+                                    <div class="font-medium">${scan.url}</div>
+                                    <div class="text-sm text-gray-400">
+                                        ${new Date(scan.scan_time).toLocaleDateString()} - 
+                                        Score: ${Math.round((scan.passed_checks / scan.total_checks) * 100)}%
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('admin-modal').classList.remove('hidden');
+        } else {
+            showAdminMessage('Failed to load user details', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showAdminMessage('Error loading user details', 'error');
+    }
+}
+
+// View scan details (admin version)
+async function viewScanDetails(scanId) {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/history/${scanId}?user_id=${user.id}`);
+        
+        if (response.ok) {
+            const scanData = await response.json();
+            
+            document.getElementById('modal-title').textContent = `Scan Details - ${scanData.url}`;
+            
+            const scanDate = new Date(scanData.scan_time);
+            const successRate = scanData.summary.total_checks > 0 ? 
+                Math.round((scanData.summary.passed_checks / scanData.summary.total_checks) * 100) : 0;
+            
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">URL</label>
+                            <div class="text-gray-300 break-all">${scanData.url}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Scan Date</label>
+                            <div class="text-gray-300">${scanDate.toLocaleDateString()} ${scanDate.toLocaleTimeString()}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Security Score</label>
+                            <div class="text-gray-300">${successRate}%</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Total Checks</label>
+                            <div class="text-gray-300">${scanData.summary.total_checks}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Passed</label>
+                            <div class="text-green-400">${scanData.summary.passed_checks}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Failed</label>
+                            <div class="text-red-400">${scanData.summary.failed_checks}</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Detailed Results</label>
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            ${scanData.results.map(result => `
+                                <div class="bg-gray-700 p-3 rounded">
+                                    <div class="flex items-start gap-3">
+                                        <i class="fas ${result.passed ? 'fa-check-circle text-green-400' : 'fa-times-circle text-red-400'} mt-1"></i>
+                                        <div>
+                                            <div class="font-medium">${result.check}</div>
+                                            <div class="text-sm text-gray-400">${result.description}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('admin-modal').classList.remove('hidden');
+        } else {
+            showAdminMessage('Failed to load scan details', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading scan details:', error);
+        showAdminMessage('Error loading scan details', 'error');
+    }
+}
+
+// View message details
+async function viewMessage(messageId) {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/messages/${messageId}?admin_id=${user.id}`);
+        
+        if (response.ok) {
+            const message = await response.json();
+            
+            document.getElementById('modal-title').textContent = `Message from ${message.name}`;
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Name</label>
+                            <div class="text-gray-300">${message.name}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <div class="text-gray-300">${message.email}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Subject</label>
+                            <div class="text-gray-300">${message.subject}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Date</label>
+                            <div class="text-gray-300">${new Date(message.created_at).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Message</label>
+                        <div class="bg-gray-700 p-4 rounded text-gray-300 whitespace-pre-wrap">${message.message}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!message.is_read ? `
+                        <button onclick="markMessageRead(${messageId}); closeAdminModal();" class="admin-btn success">
+                            <i class="fas fa-check mr-2"></i>Mark as Read
+                        </button>
+                        ` : ''}
+                        <button onclick="deleteMessage(${messageId}); closeAdminModal();" class="admin-btn danger">
+                            <i class="fas fa-trash mr-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('admin-modal').classList.remove('hidden');
+            
+            // Auto-mark as read when viewed
+            if (!message.is_read) {
+                markMessageRead(messageId);
+            }
+        } else {
+            showAdminMessage('Failed to load message', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading message:', error);
+        showAdminMessage('Error loading message', 'error');
+    }
+}
+
+// Utility functions
+function closeAdminModal() {
+    document.getElementById('admin-modal').classList.add('hidden');
+}
+
+function refreshUsers() {
+    loadUsers();
+}
+
+function refreshScans() {
+    loadScans();
+}
+
+function refreshMessages() {
+    loadMessages();
+}
+
+function refreshSystemInfo() {
+    loadSystemInfo();
+}
+
+// Export functions
+function exportUsers() {
+    showAdminMessage('Exporting users...', 'info');
+    // Implementation would depend on backend support
+}
+
+function exportScans() {
+    showAdminMessage('Exporting scans...', 'info');
+    // Implementation would depend on backend support
+}
+
+function exportAllData() {
+    showAdminMessage('Exporting all data...', 'info');
+    // Implementation would depend on backend support
+}
+
+// System actions
+function cleanupOldScans() {
+    if (confirm('This will delete scans older than 90 days. Continue?')) {
+        showAdminMessage('Cleaning up old scans...', 'info');
+        // Implementation would depend on backend support
+    }
+}
+
+// Mark message as read
+async function markMessageRead(messageId) {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/messages/${messageId}/read`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        });
+        
+        if (response.ok) {
+            showAdminMessage('Message marked as read', 'success');
+            loadMessages(); // Refresh the messages list
+        } else {
+            showAdminMessage('Failed to mark message as read', 'error');
+        }
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        showAdminMessage('Error marking message as read', 'error');
+    }
+}
+
+// Mark all messages as read
+async function markAllRead() {
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + '/api/admin/messages/read-all', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        });
+        
+        if (response.ok) {
+            showAdminMessage('All messages marked as read', 'success');
+            loadMessages();
+        } else {
+            showAdminMessage('Failed to mark all messages as read', 'error');
+        }
+    } catch (error) {
+        console.error('Error marking all messages as read:', error);
+        showAdminMessage('Error marking all messages as read', 'error');
+    }
+}
+
+// Delete message
+async function deleteMessage(messageId) {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/messages/${messageId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        });
+        
+        if (response.ok) {
+            showAdminMessage('Message deleted successfully', 'success');
+            loadMessages();
+        } else {
+            showAdminMessage('Failed to delete message', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting message:', error);
+        showAdminMessage('Error deleting message', 'error');
+    }
+}
+
+// Toggle user status
+async function toggleUserStatus(userId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/users/${userId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                admin_id: user.id,
+                is_active: !isActive 
+            })
+        });
+        
+        if (response.ok) {
+            showAdminMessage(`User ${action}d successfully`, 'success');
+            loadUsers();
+        } else {
+            showAdminMessage(`Failed to ${action} user`, 'error');
+        }
+    } catch (error) {
+        console.error(`Error ${action}ing user:`, error);
+        showAdminMessage(`Error ${action}ing user`, 'error');
+    }
+}
+
+// Delete scan (admin)
+async function deleteScanAdmin(scanId) {
+    if (!confirm('Are you sure you want to delete this scan?')) return;
+    
+    try {
+        const userStr = localStorage.getItem('webSecuraUser');
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(BACKEND_URL + `/api/admin/scans/${scanId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        });
+        
+        if (response.ok) {
+            showAdminMessage('Scan deleted successfully', 'success');
+            loadScans();
+            loadDashboardStats(); // Refresh stats
+        } else {
+            showAdminMessage('Failed to delete scan', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting scan:', error);
+        showAdminMessage('Error deleting scan', 'error');
+    }
+}
+
+// Initialize admin dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on admin page
+    if (document.querySelector('.admin-container')) {
+        if (checkAdminAuth()) {
+            loadDashboardStats();
+            loadUsers(); // Load users by default
+            
+            // Close modal when clicking outside
+            document.getElementById('admin-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeAdminModal();
                 }
             });
         }

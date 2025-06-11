@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - WebSecura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+                  <link rel="icon" type="image/x-icon" href="assests/WebIcon.webp">
+
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Matrix Background -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
+    <!-- Header -->
+    <header class="relative z-50 flex items-center justify-between" style="padding: 0.5rem 1.5rem;">
+        <!-- Logo -->
+        <div class="flex items-center logo-container">
+            <div class="relative">
+                <a href="index.html">
+                    <img src="assests/WebLogo.webp" alt="WebSecura Logo" class="w-40 h-40 object-contain">
+                </a>
+            </div>
+        </div>
+        
+        <!-- Admin Badge -->
+        <div class="flex items-center gap-4">
+            <div class="admin-badge">
+                <i class="fas fa-shield-alt mr-2"></i>
+                <span>Admin Dashboard</span>
+            </div>
+            <button class="hamburger" id="hamburgerBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Navigation Menu -->
+    <div class="nav-menu" id="navMenu">
+        <button class="close-menu" id="closeMenuBtn">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="mt-16">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home mr-3"></i>Home
+            </a>
+            <a href="profile.html" class="nav-item">
+                <i class="fas fa-user mr-3"></i>Profile
+            </a>
+            <a href="history.html" class="nav-item">
+                <i class="fas fa-history mr-3"></i>History
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt mr-3"></i>Logout
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="relative z-10 flex items-start justify-center min-h-screen px-6 pt-8">
+        <!-- Admin Dashboard Container -->
+        <div class="admin-container w-full max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="admin-icon mb-4">
+                    <i class="fas fa-tools text-6xl logo-shield"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                    Admin <span class="logo-shield">Dashboard</span>
+                </h1>
+                <p class="text-gray-300 text-lg">
+                    Monitor users, scans, and system activity
+                </p>
+                <div class="contact-divider"></div>
+            </div>
+
+            <!-- Messages -->
+            <div id="admin-message" class="auth-message hidden mb-6">
+                <div class="message-content">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span id="admin-message-text"></span>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="admin-stats-grid mb-8">
+                <div class="admin-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users text-blue-400"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-users">-</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                </div>
+                
+                <div class="admin-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shield-alt text-green-400"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-scans">-</div>
+                        <div class="stat-label">Total Scans</div>
+                    </div>
+                </div>
+                
+                <div class="admin-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-envelope text-purple-400"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-messages">-</div>
+                        <div class="stat-label">Contact Messages</div>
+                    </div>
+                </div>
+                
+                <div class="admin-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line text-yellow-400"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="avg-security-score">-</div>
+                        <div class="stat-label">Avg Security Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="admin-tabs mb-6">
+                <button class="admin-tab active" onclick="switchTab('users')" id="users-tab">
+                    <i class="fas fa-users mr-2"></i>Users
+                </button>
+                <button class="admin-tab" onclick="switchTab('scans')" id="scans-tab">
+                    <i class="fas fa-shield-alt mr-2"></i>Recent Scans
+                </button>
+                <button class="admin-tab" onclick="switchTab('messages')" id="messages-tab">
+                    <i class="fas fa-envelope mr-2"></i>Messages
+                </button>
+                <button class="admin-tab" onclick="switchTab('system')" id="system-tab">
+                    <i class="fas fa-cog mr-2"></i>System
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="admin-content">
+                <!-- Users Tab -->
+                <div id="users-content" class="tab-content active">
+                    <div class="content-header">
+                        <h2 class="content-title">User Management</h2>
+                        <div class="content-actions">
+                            <button onclick="refreshUsers()" class="admin-btn secondary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                            <button onclick="exportUsers()" class="admin-btn primary">
+                                <i class="fas fa-download mr-2"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Scans</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center py-8">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <div>Loading users...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Scans Tab -->
+                <div id="scans-content" class="tab-content">
+                    <div class="content-header">
+                        <h2 class="content-title">Recent Scans</h2>
+                        <div class="content-actions">
+                            <button onclick="refreshScans()" class="admin-btn secondary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                            <button onclick="exportScans()" class="admin-btn primary">
+                                <i class="fas fa-download mr-2"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>URL</th>
+                                    <th>Security Score</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scans-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center py-8">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <div>Loading scans...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Messages Tab -->
+                <div id="messages-content" class="tab-content">
+                    <div class="content-header">
+                        <h2 class="content-title">Contact Messages</h2>
+                        <div class="content-actions">
+                            <button onclick="refreshMessages()" class="admin-btn secondary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                            <button onclick="markAllRead()" class="admin-btn primary">
+                                <i class="fas fa-check mr-2"></i>Mark All Read
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Subject</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="messages-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center py-8">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <div>Loading messages...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- System Tab -->
+                <div id="system-content" class="tab-content">
+                    <div class="content-header">
+                        <h2 class="content-title">System Information</h2>
+                        <div class="content-actions">
+                            <button onclick="refreshSystemInfo()" class="admin-btn secondary">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="system-info-grid">
+                        <div class="system-info-card">
+                            <h3 class="system-card-title">Database Status</h3>
+                            <div id="db-status" class="system-info-content">
+                                <i class="fas fa-spinner fa-spin"></i> Checking...
+                            </div>
+                        </div>
+                        
+                        <div class="system-info-card">
+                            <h3 class="system-card-title">Server Health</h3>
+                            <div id="server-health" class="system-info-content">
+                                <i class="fas fa-spinner fa-spin"></i> Checking...
+                            </div>
+                        </div>
+                        
+                        <div class="system-info-card">
+                            <h3 class="system-card-title">Recent Activity</h3>
+                            <div id="recent-activity" class="system-info-content">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
+                        </div>
+                        
+                        <div class="system-info-card">
+                            <h3 class="system-card-title">System Actions</h3>
+                            <div class="system-actions">
+                                <button onclick="cleanupOldScans()" class="admin-btn danger full-width">
+                                    <i class="fas fa-broom mr-2"></i>Cleanup Old Scans
+                                </button>
+                                <button onclick="exportAllData()" class="admin-btn primary full-width">
+                                    <i class="fas fa-database mr-2"></i>Export All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Modals -->
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-90vh overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                <h2 id="modal-title" class="text-2xl font-bold">Modal Title</h2>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="p-6 overflow-y-auto max-h-70vh">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
