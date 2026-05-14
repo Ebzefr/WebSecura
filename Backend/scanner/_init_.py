@@ -3,4 +3,12 @@ __author__ = "WebSecura Team"
 
 from .security_scanner import SecurityScanner
 
-__all__ = ['SecurityScanner']
+__all__ = ['SecurityScanner', 'PerformanceAnalyzer']
+
+
+
+
+
+
+
+

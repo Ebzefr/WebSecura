@@ -10,6 +10,7 @@ from urllib3.util.retry import Retry
 import json
 import time
 import certifi
+from .actionable_fixes import get_fix_for_check
 
 # Suppress SSL warnings for testing
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
@@ -172,6 +173,9 @@ class SecurityScanner:
                 'details': f'Failed to access website: {str(e)}',
                 'severity': 'high'
             })
+        
+        # ✅ Add actionable fixes AFTER try/except block
+        results = self.enhance_results_with_fixes(results)
         
         return results
 
@@ -436,7 +440,6 @@ class SecurityScanner:
             'recommendation': 'Clickjacking protection properly configured' if has_protection else 'Add "X-Frame-Options: DENY" header or CSP "frame-ancestors \'none\'" directive to prevent clickjacking attacks'
         }
 
-    # NEW ADVANCED SECURITY CHECKS
 
     def _check_injection_risks(self, content: str, url: str) -> Dict[str, Any]:
         """Enhanced injection risk detection with passive pattern analysis"""
@@ -691,3 +694,14 @@ class SecurityScanner:
             'severity': 'medium' if not is_secure else 'none',
             'recommendation': 'Form security properly configured' if is_secure else 'Use POST method for sensitive data, add autocomplete="off" to password fields, and always specify form methods explicitly. Implement proper input validation and CSRF protection.'
         }
+    
+    def enhance_results_with_fixes(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Add actionable fix instructions to failed checks"""
+        for result in results:
+            if not result['passed']:
+                # Normalize check name for lookup
+                check_key = result['check'].lower().replace(' ', '_').replace('-', '_')
+                fix_data = get_fix_for_check(check_key)
+                if fix_data:
+                    result['actionable_fix'] = fix_data
+        return results
