@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -32,13 +32,8 @@ const History = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchScanHistory();
-    }
-  }, [user]);
 
-  const fetchScanHistory = async () => {
+  const fetchScanHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -67,8 +62,13 @@ const History = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, getToken]);
 
+  useEffect(() => {
+    if (user) {
+      fetchScanHistory();
+    }
+  }, [user, fetchScanHistory]);
   const confirmDelete = (scan, e) => {
     e.stopPropagation();
     setScanToDelete(scan);

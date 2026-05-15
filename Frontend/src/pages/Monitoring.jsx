@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBell,
@@ -7,7 +7,6 @@ import {
   faTrash,
   faToggleOn,
   faToggleOff,
-  faClock,
   faChartLine,
   faExclamationTriangle,
   faCheckCircle,
@@ -49,13 +48,19 @@ const Monitoring = () => {
     }
   }, [user]);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     await Promise.all([
       fetchSchedules(),
       fetchAlerts(),
       fetchEmailPreferences()
     ]);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchAllData();
+    }
+  }, [user, fetchAllData]);
 
   const fetchSchedules = async () => {
     try {
@@ -147,7 +152,7 @@ const Monitoring = () => {
     }
 
     // Basic URL validation
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     if (!urlPattern.test(newScan.url.trim())) {
       setFormError('Please enter a valid URL (e.g., example.com or https://example.com)');
       return;

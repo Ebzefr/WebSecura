@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSpinner, 
-  faShieldAlt,
   faExclamationTriangle,
   faTimes
 } from '@fortawesome/free-solid-svg-icons';
@@ -34,7 +33,7 @@ const Home = () => {
     }
 
     // Validate URL format
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     if (!urlPattern.test(url.trim())) {
       setError('Please enter a valid URL (e.g., example.com or https://example.com)');
       setTimeout(() => setError(null), 5000);
