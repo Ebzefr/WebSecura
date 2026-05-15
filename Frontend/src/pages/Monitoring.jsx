@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBell,
@@ -42,11 +41,7 @@ const Monitoring = () => {
   });
   const [formError, setFormError] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchAllData();
-    }
-  }, [user]);
+  
 
   useEffect(() => {
     if (user) {
