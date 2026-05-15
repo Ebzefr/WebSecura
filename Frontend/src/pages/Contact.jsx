@@ -36,39 +36,37 @@ const Contact = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const response = await submitContactForm(
-        formData.name,
-        formData.email,
-        formData.subject,
-        formData.message
-      );
+  try {
+    const response = await fetch('http://localhost:5000/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      }),
+    });
 
-      if (response.status === 'success') {
-        setShowSuccess(true);
-        setFormData({
-          name: '',
-          email: '',
-          subject: '',
-          message: '',
-        });
+    const data = await response.json();
 
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 5000);
-      } else {
-        alert('Failed to send message. Please try again.');
-      }
-    } catch (error) {
-      console.error('Contact form error:', error);
-      alert('Error sending message: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setIsSubmitting(false);
+    if (data.status === 'success') {
+      setShowSuccess(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      setTimeout(() => setShowSuccess(false), 5000);
+    } else {
+      alert('Failed to send message. Please try again.');
     }
-  };
+  } catch (error) {
+    console.error('Contact form error:', error);
+    alert('Error sending message. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className="relative z-10 flex items-center justify-center min-h-screen px-6">
