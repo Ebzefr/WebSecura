@@ -16,7 +16,6 @@ import {
   faGithub,
   faDiscord,
 } from '@fortawesome/free-brands-svg-icons';
-import { submitContactForm } from '../services/api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
