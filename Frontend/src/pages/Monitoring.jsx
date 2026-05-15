@@ -54,7 +54,8 @@ const Monitoring = () => {
       };
       fetchAllData();
     }
-  }, [user]); 
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps 
+  
   const fetchSchedules = async () => {
     try {
       setLoading(true);
