@@ -84,7 +84,6 @@ const clerkAppearance = {
     // Avatar colour inside the modal
 userPreviewAvatarBox: "border-2 border-green-500/40",
 userPreviewAvatarImage: "bg-gradient-to-br from-green-400 to-green-600",
-avatarBox: "border-2 border-green-500/40",
 
 // The initials fallback colour (this is what controls the blue)
 avatarInitials: "bg-gradient-to-br from-green-400 to-green-600 text-black",

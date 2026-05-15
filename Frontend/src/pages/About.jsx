@@ -7,8 +7,7 @@ import {
   faClock,
   faBolt,
   faChevronDown,
-  faChevronUp,
-  faInfoCircle
+  faChevronUp
 } from '@fortawesome/free-solid-svg-icons';
 
 const About = () => {

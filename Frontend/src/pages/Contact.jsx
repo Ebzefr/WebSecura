@@ -243,18 +243,18 @@ const Contact = () => {
               <div className="social-section mt-8 pt-6 border-t border-gray-600">
                 <h3 className="text-lg font-semibold mb-4 text-green-400">Follow Us</h3>
                 <div className="social-links">
-                  <a href="#" className="social-link">
-                    <FontAwesomeIcon icon={faTwitter} />
-                  </a>
-                  <a href="#" className="social-link">
-                    <FontAwesomeIcon icon={faLinkedin} />
-                  </a>
-                  <a href="#" className="social-link">
-                    <FontAwesomeIcon icon={faGithub} />
-                  </a>
-                  <a href="#" className="social-link">
-                    <FontAwesomeIcon icon={faDiscord} />
-                  </a>
+                 <button className="social-link" onClick={() => {}}>
+  <FontAwesomeIcon icon={faTwitter} />
+</button>
+<button className="social-link" onClick={() => {}}>
+  <FontAwesomeIcon icon={faLinkedin} />
+</button>
+<button className="social-link" onClick={() => {}}>
+  <FontAwesomeIcon icon={faGithub} />
+</button>
+<button className="social-link" onClick={() => {}}>
+  <FontAwesomeIcon icon={faDiscord} />
+</button>
                 </div>
               </div>
             </div>
