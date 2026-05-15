@@ -48,20 +48,18 @@ const Monitoring = () => {
     }
   }, [user]);
 
-  const fetchAllData = useCallback(async () => {
-    await Promise.all([
-      fetchSchedules(),
-      fetchAlerts(),
-      fetchEmailPreferences()
-    ]);
-  }, []);
-
   useEffect(() => {
     if (user) {
+      const fetchAllData = async () => {
+        await Promise.all([
+          fetchSchedules(),
+          fetchAlerts(),
+          fetchEmailPreferences()
+        ]);
+      };
       fetchAllData();
     }
-  }, [user, fetchAllData]);
-
+  }, [user]); 
   const fetchSchedules = async () => {
     try {
       setLoading(true);
