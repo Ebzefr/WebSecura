@@ -53,7 +53,7 @@ const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
       // Get Clerk token if user is signed in
       const token = user ? await getToken() : null;
       
-      const response = await fetch('http://localhost:5000/api/scan', {
+      const response = await fetch('https://websecura.onrender.com/api/scan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

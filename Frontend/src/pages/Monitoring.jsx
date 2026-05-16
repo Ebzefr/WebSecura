@@ -62,7 +62,7 @@ const Monitoring = () => {
       setError(null);
       const token = await getToken();
       
-      const response = await fetch('http://localhost:5000/api/monitoring/schedules', {
+      const response = await fetch('https://websecura.onrender.com/api/monitoring/schedules', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -90,7 +90,7 @@ const Monitoring = () => {
     try {
       const token = await getToken();
       
-      const response = await fetch('http://localhost:5000/api/monitoring/alerts', {
+      const response = await fetch('https://websecura.onrender.com/api/monitoring/alerts', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -114,7 +114,7 @@ const Monitoring = () => {
     try {
       const token = await getToken();
       
-      const response = await fetch('http://localhost:5000/api/monitoring/email/preferences', {
+      const response = await fetch('https://websecura.onrender.com/api/monitoring/email/preferences', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -158,7 +158,7 @@ const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     try {
       const token = await getToken();
       
-      const response = await fetch('http://localhost:5000/api/monitoring/schedules', {
+      const response = await fetch('https://websecura.onrender.com/api/monitoring/schedules', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     try {
       const token = await getToken();
       
-      const response = await fetch(`http://localhost:5000/api/monitoring/schedules/${scheduleToDelete.id}`, {
+      const response = await fetch(`https://websecura.onrender.com/api/monitoring/schedules/${scheduleToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -240,7 +240,7 @@ const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     try {
       const token = await getToken();
       
-      const response = await fetch(`http://localhost:5000/api/monitoring/schedules/${scanId}/toggle`, {
+      const response = await fetch(`https://websecura.onrender.com/api/monitoring/schedules/${scanId}/toggle`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

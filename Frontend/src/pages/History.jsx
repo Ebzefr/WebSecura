@@ -39,7 +39,7 @@ const History = () => {
       setError(null);
       const token = await getToken();
 
-      const response = await fetch(`http://localhost:5000/api/scan-history/${user.id}`, {
+      const response = await fetch(`https://websecura.onrender.com/api/scan-history/${user.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -82,7 +82,7 @@ const History = () => {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/scan-history/${scanToDelete.id}`, {
+      const response = await fetch(`https://websecura.onrender.com/api/scan-history/${scanToDelete.id}`, {
         method: 'DELETE'
       });
 

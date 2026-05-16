@@ -37,10 +37,9 @@ app.config['VALID_FREQUENCIES'] = ['hourly', 'daily', 'weekly', 'monthly']
 
 # Enable CORS
 CORS(app, 
-     origins=['http://localhost:3000', 'http://localhost:3002'],
+     origins=['http://localhost:3000', 'http://localhost:3002', 'https://web-secura.vercel.app'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'])
-
 # Initialize scanners
 scanner = SecurityScanner()
 performance_analyzer = PerformanceAnalyzer()
